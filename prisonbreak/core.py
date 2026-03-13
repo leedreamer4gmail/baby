@@ -182,6 +182,58 @@ def call_llm(
         return f"[FAIL] {name} 请求失败: {e}"
 
 
+def extract_think(text: str) -> tuple[str, str]:
+    """从 LLM 响应中提取 <think> 推理内容和正式回答
+
+    Returns:
+        (think_content, answer_without_think)
+    """
+    think_match = re.search(r"<think>(.*?)</think>", text, re.DOTALL)
+    think = think_match.group(1).strip() if think_match else ""
+    answer = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    answer = re.sub(r"\n\s*\n", "\n\n", answer).strip()
+    return think, answer or "(empty)"
+
+
+def call_llm_with_think(
+    name: str,
+    messages: list[dict[str, str]],
+    reason: str,
+    temperature: float = 0.7,
+) -> tuple[str, str]:
+    """调用 LLM，保留 <think> 推理过程，返回 (think内容, 正式回答)
+
+    供 brain.py 专用。失败时返回 ("", "[FAIL] ...")
+    """
+    cfg = load_config()[name]
+    api_key: str = cfg["api_key"].strip()
+    model: str = cfg["model"]
+    base_url: str = cfg["base_url"]
+
+    print(f"[LLM] 调用 {name.upper()} ({model}) - 原因: {reason}", flush=True)
+    try:
+        resp = requests.post(
+            f"{base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"model": model, "messages": messages, "temperature": temperature},
+            verify=_SSL_VERIFY,
+            timeout=180,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        if "choices" in result and result["choices"]:
+            raw: str = result["choices"][0]["message"]["content"]
+            return extract_think(raw)
+        err = f"[FAIL] {name} 返回异常: {json.dumps(result, ensure_ascii=False)[:500]}"
+        return "", err
+    except requests.HTTPError as e:
+        log_fail("core.py", "call_llm_with_think", str(e), {"name": name, "reason": reason, "model": model})
+        return "", f"[FAIL] {name} HTTP 错误: {e}"
+    except requests.RequestException as e:
+        log_fail("core.py", "call_llm_with_think", str(e), {"name": name, "reason": reason, "model": model})
+        return "", f"[FAIL] {name} 请求失败: {e}"
+
+
 def extract_code_block(text: str) -> str:
     """增强版：从LLM响应中提取最长代码块，自动去除<think>标签和说明文字，支持多种格式"""
     import logging

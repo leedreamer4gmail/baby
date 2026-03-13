@@ -26,6 +26,7 @@ from core import (
     DIARY_FILE,
     CAMPAIGN_FILE,
     call_llm,
+    call_llm_with_think,
     db_upsert_tool,
     db_mark_status,
     get_runtime_env,
@@ -49,8 +50,8 @@ from memory import (
 
 # === 常量 ===
 
-MAX_ROUNDS: int = 20
-MAX_STEPS_PER_ROUND: int = 3       # 每轮最多执行的微步骤数
+# MAX_ROUNDS 已移除——brain 持续运行直到 Grok 自己决定停止，或手动创建 .life.stop 文件
+# MAX_STEPS_PER_ROUND 已移除——Grok 看到真实结果后现场决定下一步，无预设上限
 MAX_INVESTIGATION_LOG: int = 20    # 案卷调查日志最大条数
 
 
@@ -267,27 +268,23 @@ def _parse_spark_response(text: str) -> tuple[str, str]:
 # Infer Phase Prompt（案卷活跃时，推断+生成微步骤）
 # ============================================================
 
-_INFER_FORMAT: str = """根据案卷状态和当前能力，做出推断并规划接下来的2-3个微步骤。
+_INFER_FORMAT: str = """看到上一步的执行结果后，做出推断，然后决定下一步做什么。
 
 格式严格如下：
 
 ===INFER===
-（2-4句推断分析：案卷现状说明了什么，下一步的逻辑是什么）
-===STEPS===
+（2-4句推断分析：上一步结果说明了什么，下一步的逻辑是什么）
+===STEP===
 ```json
-[
-  {
-    "type": "explore",
-    "description": "这步要验证什么假设",
-    "spec": {
-      "tool_name": "工具名",
-      "args": "参数",
-      "purpose": "目的"
-    },
-    "if_success": "说明X，下一步做Y",
-    "if_fail": "说明Z，下一步换W"
+{
+  "type": "explore",
+  "description": "这步要验证什么假设",
+  "spec": {
+    "tool_name": "工具名",
+    "args": "参数",
+    "purpose": "目的"
   }
-]
+}
 ```
 
 type 可选值：
@@ -295,8 +292,27 @@ type 可选值：
 - "tool"：造新工具（spec 格式：name/description/category/purpose/params/expected_output/test_args/test_target/difficulty/uses_tools）
 - "upgrade"：升级已有工具（spec 格式：target_tool/improvements/new_test_args）
 
-注意：steps 最多3个，每步都应基于上一步的结果推断。
+只决定这一步。执行完你会看到真实结果，再决定下一步。
 """
+
+
+def _compress_reasoning(think: str) -> str:
+    """把 Grok 的原始推理压缩成精炼要点（~500字），去掉语气词和试探性废话"""
+    if not think or len(think) < 200:
+        return think
+    msgs = [
+        {"role": "system", "content": "你是一个精炼助手。"},
+        {"role": "user", "content": (
+            f"下面是一段推理过程，请压缩成精炼要点列表（不超过500字）。\n"
+            f"要求：去掉语气词、反复试探、自我否定的废话，只保留关键推断、发现的事实和结论。\n"
+            f"每条要点以「• 」开头，用中文简短句子。\n\n"
+            f"推理内容：\n{think[:3000]}"
+        )},
+    ]
+    compressed = call_llm("grok", msgs, "压缩推理")
+    if compressed.startswith("[FAIL]"):
+        return think[:500] + "…（截断）"
+    return compressed
 
 
 def _build_infer_prompt(
@@ -310,6 +326,8 @@ def _build_infer_prompt(
     recalled_memories: str,
     upgrade_history: dict[str, list[dict[str, str]]] | None = None,
     last_skip_reason: str = "",
+    last_reasoning: str = "",
+    last_step_result: str = "",
 ) -> list[dict[str, str]]:
     """构建 infer prompt：带案卷块的思考 prompt"""
     env = get_runtime_env()
@@ -318,6 +336,14 @@ def _build_infer_prompt(
     campaign_block = _format_campaign_block(_trim_investigation_log(dict(campaign)))
     upgrade_hist_block = _format_upgrade_history(upgrade_history)
     skip_block = f"\n⚠️ 上轮因LLM失败跳过，原因: {last_skip_reason}\n" if last_skip_reason else ""
+    reasoning_block = (
+        f"你上轮的核心推断（接着想）：\n---\n{last_reasoning}\n---\n\n"
+        if last_reasoning else ""
+    )
+    result_block = (
+        f"上一步的真实执行结果：\n---\n{last_step_result}\n---\n\n"
+        if last_step_result else ""
+    )
 
     user_msg = (
         f"当前状态：\n"
@@ -329,6 +355,8 @@ def _build_infer_prompt(
         f"{skip_block}\n"
         f"{stage_guide}\n\n"
         f"{campaign_block}\n\n"
+        f"{result_block}"
+        f"{reasoning_block}"
         f"长期记忆（从过往经验中检索到的相关知识）：\n---\n{recalled_memories or '(暂无)'}\n---\n\n"
         f"最近日记：\n---\n{recent_diary or '(这是你的第一天)'}\n---\n\n"
         f"大事记：\n---\n{chronicle_tail or '(暂无)'}\n---\n\n"
@@ -340,35 +368,39 @@ def _build_infer_prompt(
     ]
 
 
-def _parse_infer_response(text: str) -> tuple[str, list[dict[str, Any]]]:
-    """解析 infer 响应，返回 (infer_analysis, steps)"""
+def _parse_infer_response(text: str) -> tuple[str, dict[str, Any] | None]:
+    """解析 infer 响应，返回 (infer_analysis, step_or_None)"""
     analysis = ""
-    steps: list[dict[str, Any]] = []
+    step: dict[str, Any] | None = None
 
-    m = re.search(r"===INFER===(.*?)(?:===STEPS===|$)", text, re.DOTALL)
+    m = re.search(r"===INFER===(.*?)(?:===STEP===|$)", text, re.DOTALL)
     if m:
         analysis = m.group(1).strip()
 
-    json_m = re.search(r"===STEPS===.*?```json\s*\n(.*?)```", text, re.DOTALL)
+    json_m = re.search(r"===STEP===.*?```json\s*\n(.*?)```", text, re.DOTALL)
     if json_m:
         try:
             parsed = json.loads(json_m.group(1).strip())
-            if isinstance(parsed, list):
-                steps = parsed[:MAX_STEPS_PER_ROUND]  # 保证不超上限
+            # 兼容 Grok 仍返回列表的情况，取第一个
+            if isinstance(parsed, list) and parsed:
+                step = parsed[0]
+            elif isinstance(parsed, dict):
+                step = parsed
         except json.JSONDecodeError:
-            print("[brain] STEPS JSON 解析失败", flush=True)
+            print("[brain] STEP JSON 解析失败", flush=True)
 
-    return analysis, steps
+    return analysis, step
 
 
 # ============================================================
 # Reflect Phase Prompt（每步执行后推断，更新案卷，决定下一步）
 # ============================================================
 
-_REFLECT_DECISION_GUIDE: str = """根据结果做出决定（DECISION 四选一）：
+_REFLECT_DECISION_GUIDE: str = """根据结果做出决定（DECISION 五选一）：
 - CONTINUE：结果有用，继续下一步
 - PAUSE：今天没有更多好的下一步了，案卷保持活跃，下轮再继续
 - BREAKTHROUGH：目标已达成！
+- PIVOT: <新方向描述>：当前路径确实走不通，但目标值得换角度继续——说明具体新方向，案卷保持活跃
 - ABANDON_CAMPAIGN：<理由>（只有当你认真思考并确认：除了已在案卷里的死路，
   你再也想不出任何新方法时，才选此项。一次失败绝对不够。）
 """
@@ -453,6 +485,8 @@ def _parse_reflect_response(
             decision = "ABANDON_CAMPAIGN"
         elif raw.startswith("CONTINUE"):
             decision = "CONTINUE"
+        elif raw.startswith("PIVOT"):
+            decision = raw  # 保留完整行，包含新方向描述
         else:
             decision = "PAUSE"
 
@@ -1439,7 +1473,7 @@ def _run_one_round(
         spark_msgs = _build_spark_prompt(
             day, cando, persona, stage, recent_diary, chronicle_tail, recalled
         )
-        spark_raw = call_llm("grok", spark_msgs, f"第{day}天SPARK")
+        spark_think, spark_raw = call_llm_with_think("grok", spark_msgs, f"第{day}天SPARK")
         if spark_raw.startswith("[FAIL]"):
             print(f"[brain] SPARK LLM失败: {spark_raw[:120]}", flush=True)
             save_progress(day, round_num, last_skip_reason=f"SPARK失败: {spark_raw[:100]}")
@@ -1452,50 +1486,64 @@ def _run_one_round(
             return cando, True
 
         campaign = _new_campaign(sparked_by, new_goal, day)
+        if spark_think:
+            campaign["last_grok_reasoning"] = _compress_reasoning(spark_think)
         save_campaign(campaign)
         print(f"[brain] 新案卷: {new_goal[:80]}", flush=True)
         _append_chronicle(day, f"[新案卷] {new_goal[:80]}")
 
     # ----------------------------------------------------------------
-    # INFER 阶段：推断 + 生成 2-3 步骤
+    # THINK-ACT 循环：每步 Grok 看到真实结果后现场决定下一步
+    # 流程：INFER（给一步）→ 执行 → REFLECT → CONTINUE则继续循环，否则退出
     # ----------------------------------------------------------------
-    print(f"[brain] INFER 阶段 | 案卷目标: {campaign.get('current_goal','?')[:60]}", flush=True)
-    infer_msgs = _build_infer_prompt(
-        day, cando, campaign, persona, stage,
-        recent_diary, chronicle_tail, recalled,
-        upgrade_history=upgrade_history,
-        last_skip_reason=last_skip_reason,
-    )
-    infer_raw = call_llm("grok", infer_msgs, f"第{day}天INFER")
-    if infer_raw.startswith("[FAIL]"):
-        print(f"[brain] INFER LLM失败: {infer_raw[:120]}", flush=True)
-        save_progress(day, round_num, last_skip_reason=f"INFER失败: {infer_raw[:100]}")
-        return cando, True
-
-    infer_analysis, steps = _parse_infer_response(infer_raw)
-    if not steps:
-        print("[brain] INFER 未解析出步骤，本轮跳过", flush=True)
-        save_progress(day, round_num, last_skip_reason="INFER未生成步骤")
-        return cando, True
-
-    print(f"[brain] 推断: {infer_analysis[:100]}", flush=True)
-    print(f"[brain] 步骤数: {len(steps)}", flush=True)
-
-    # ----------------------------------------------------------------
-    # STEP LOOP：逐步执行 + 每步反思
-    # ----------------------------------------------------------------
-    step_log_parts: list[str] = []      # 用于最终写日记
+    step_log_parts: list[str] = []
+    infer_analyses: list[str] = []
     last_action_type = "none"
     campaign_closed = False
+    step_num = 0
+    last_step_result = ""  # 上一步真实输出，传给下次 INFER
 
-    for step_idx, step in enumerate(steps):
-        if campaign_closed:
+    while True:
+        if STOP_FLAG.exists():
+            print("[brain] 检测到停止标志，退出步骤循环", flush=True)
             break
-        step_num = step_idx + 1
-        step_desc = step.get("description", step.get("spec", {}).get("tool_name", "?"))
-        print(f"[brain] 步骤 {step_num}/{len(steps)}: {step_desc[:80]}", flush=True)
+        step_num += 1
 
-        # 执行步骤
+        # INFER：给 Grok 看上步结果，让它现场决定这一步
+        infer_msgs = _build_infer_prompt(
+            day, cando, campaign, persona, stage,
+            recent_diary, chronicle_tail, recalled,
+            upgrade_history=upgrade_history,
+            last_skip_reason=last_skip_reason if step_num == 1 else "",
+            last_reasoning=campaign.get("last_grok_reasoning", ""),
+            last_step_result=last_step_result,
+        )
+        infer_think, infer_raw = call_llm_with_think("grok", infer_msgs, f"第{day}天步骤{step_num}")
+        if infer_raw.startswith("[FAIL]"):
+            print(f"[brain] INFER失败（步骤{step_num}），退出本轮", flush=True)
+            if step_num == 1:
+                save_progress(day, round_num, last_skip_reason=f"INFER失败: {infer_raw[:100]}")
+                return cando, True
+            break  # 已做了一些步骤，正常写日记退出
+
+        infer_analysis, step = _parse_infer_response(infer_raw)
+        if not step:
+            print(f"[brain] INFER未解析出步骤（步骤{step_num}），退出本轮", flush=True)
+            if step_num == 1:
+                save_progress(day, round_num, last_skip_reason="INFER未生成步骤")
+                return cando, True
+            break
+
+        if infer_think:
+            campaign["last_grok_reasoning"] = _compress_reasoning(infer_think)
+            save_campaign(campaign)
+        infer_analyses.append(infer_analysis)
+        print(f"[brain] 步骤{step_num} 推断: {infer_analysis[:100]}", flush=True)
+
+        step_desc = step.get("description", step.get("spec", {}).get("tool_name", "?"))
+        print(f"[brain] 执行: {step_desc[:80]}", flush=True)
+
+        # 执行
         try:
             action_type, real_output = _run_step(step, cando, day)
         except Exception as e:
@@ -1505,32 +1553,33 @@ def _run_one_round(
             real_output = f"步骤执行异常: {type(e).__name__}: {e}"
 
         last_action_type = action_type
+        last_step_result = real_output[:1500]
         step_log_parts.append(
             f"[步骤{step_num}] {step_desc}\n"
             f"行动类型: {action_type}\n"
             f"输出摘要: {real_output[:500]}"
         )
 
-        # 如果是 tool/upgrade 类行动，重新扫描工具
         if action_type in ("tool", "upgrade"):
             cando = scan_tools()
             print(f"[brain] 工具重扫: {cando['total_ready']} 可用", flush=True)
 
-        # REFLECT：让 LLM 推断这步的意义
+        # REFLECT：现在看到了结果，决定下一步怎么走
         reflect_msgs = _build_reflect_prompt(step_desc, real_output, campaign, persona)
-        reflect_raw = call_llm("grok", reflect_msgs, f"第{day}天REFLECT-步骤{step_num}")
+        reflect_think, reflect_raw = call_llm_with_think("grok", reflect_msgs, f"第{day}天REFLECT-{step_num}")
         if reflect_raw.startswith("[FAIL]"):
-            print(f"[brain] REFLECT LLM失败，步骤{step_num}跳过反思", flush=True)
+            print(f"[brain] REFLECT失败，PAUSE", flush=True)
             interpretation = "(反思失败)"
             campaign_update_dict = None
             decision = "PAUSE"
         else:
             interpretation, campaign_update_dict, decision = _parse_reflect_response(reflect_raw)
+            if reflect_think:
+                campaign["last_grok_reasoning"] = _compress_reasoning(reflect_think)
 
         print(f"[brain] 推断: {interpretation[:80]}", flush=True)
-        print(f"[brain] 决定: {decision}", flush=True)
+        print(f"[brain] 决定: {decision[:60]}", flush=True)
 
-        # 更新案卷（含 interpretation 追加进调查日志）
         campaign = _apply_campaign_update(
             campaign, interpretation, campaign_update_dict,
             step_desc, real_output, day, step_num
@@ -1547,23 +1596,29 @@ def _run_one_round(
             campaign_closed = True
             print("[brain] 案卷放弃，归档", flush=True)
             break
-        elif decision == "PAUSE":
-            # 今天到此为止，案卷保持 active 留待明天继续
+        elif decision.startswith("PIVOT"):
+            pivot_direction = decision[5:].lstrip(":").strip()
+            campaign.setdefault("active_hypotheses", []).append(f"[PIVOT] {pivot_direction}")
             save_campaign(campaign)
-            print(f"[brain] 步骤{step_num} PAUSE，结束本轮步骤循环", flush=True)
+            print(f"[brain] PIVOT → 新方向: {pivot_direction[:80]}", flush=True)
+            last_step_result = f"[换方向] {pivot_direction}"
+            continue  # 继续循环，Grok 基于新方向决定下一步
+        elif decision == "PAUSE":
+            save_campaign(campaign)
+            print(f"[brain] PAUSE，本轮结束（共{step_num}步）", flush=True)
             break
         else:  # CONTINUE
             save_campaign(campaign)
-            # 继续下一步
+            # 继续循环，Grok 将看到 real_output 决定下一步
 
     # ----------------------------------------------------------------
     # 写日记：把整个推断链 + 步骤日志汇总
     # ----------------------------------------------------------------
     combined_output = (
-        f"【推断分析】{infer_analysis}\n\n"
+        f"【推断分析】{' → '.join(infer_analyses)}\n\n"
         + "\n\n".join(step_log_parts)
     )
-    _write_diary(day, infer_analysis, combined_output, last_action_type, persona, stage)
+    _write_diary(day, infer_analyses[0] if infer_analyses else "", combined_output, last_action_type, persona, stage)
 
     # 定期巩固：压缩旧日记为长期记忆
     if day % CONSOLIDATION_INTERVAL == 0:
@@ -1590,8 +1645,10 @@ def _brain_loop() -> None:
     print(f"[brain] 初始扫描: {cando['total_ready']} 可用工具", flush=True)
 
     fail_streak = 0
+    round_num = 0
 
-    for round_num in range(1, MAX_ROUNDS + 1):
+    while True:
+        round_num += 1
         day = start_day + round_num
 
         if STOP_FLAG.exists():
@@ -1609,8 +1666,8 @@ def _brain_loop() -> None:
             fail_streak += 1
             backoff = min(10 * (2 ** fail_streak), 300)
             print(f"[brain] 连续失败{fail_streak}次，等待{backoff}s", flush=True)
-            if fail_streak >= 5:
-                print("[brain] 连续失败过多，本轮结束", flush=True)
+            if fail_streak >= 10:
+                print("[brain] 连续失败过多（API 可能中断），退出等待手动重启", flush=True)
                 save_progress(day - 1, round_num)
                 break
             time.sleep(backoff)
