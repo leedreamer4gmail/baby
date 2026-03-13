@@ -1,0 +1,160 @@
+/* ── Reset & variables ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #fff8f0;
+  --surface: #ffffff;
+  --primary: #f4845f;
+  --primary-dark: #d9664a;
+  --text: #3b2f2f;
+  --muted: #a08080;
+  --border: #f0d9ce;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(60, 20, 0, 0.07);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+header {
+  background: var(--primary);
+  color: #fff;
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+header h1 { font-size: 2rem; }
+header p  { opacity: .85; font-size: .95rem; }
+
+/* ── Main layout ─────────────────────────────────────────────── */
+main {
+  flex: 1;
+  max-width: 680px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+.card h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+
+/* ── Form ────────────────────────────────────────────────────── */
+form { display: flex; flex-direction: column; gap: .75rem; }
+label { font-weight: 600; font-size: .875rem; }
+select, input[type="text"] {
+  width: 100%;
+  padding: .6rem .8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--bg);
+  transition: border-color .2s;
+}
+select:focus, input[type="text"]:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+button[type="submit"] {
+  align-self: flex-start;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: .6rem 1.4rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+}
+button[type="submit"]:hover { background: var(--primary-dark); }
+
+/* ── Summary stats ───────────────────────────────────────────── */
+#summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .75rem;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .75rem .5rem;
+}
+.stat .icon  { font-size: 1.5rem; }
+.stat .count { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+.stat .label { font-size: .75rem; color: var(--muted); }
+
+/* ── Activity list ───────────────────────────────────────────── */
+#clear-btn-container { display: flex; justify-content: flex-end; margin-bottom: .75rem; }
+button.danger {
+  background: transparent;
+  border: 1px solid #e05555;
+  color: #e05555;
+  border-radius: 8px;
+  padding: .35rem .9rem;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+button.danger:hover { background: #e05555; color: #fff; }
+
+#activity-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+#activity-list li {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .6rem .9rem;
+  font-size: .9rem;
+}
+#activity-list li .item-icon  { font-size: 1.2rem; }
+#activity-list li .item-type  { font-weight: 600; text-transform: capitalize; }
+#activity-list li .item-note  { color: var(--muted); flex: 1; }
+#activity-list li .item-time  { color: var(--muted); font-size: .8rem; white-space: nowrap; }
+#activity-list li .item-del   {
+  margin-left: .5rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+  line-height: 1;
+}
+#activity-list li .item-del:hover { color: #e05555; }
+.empty-state { color: var(--muted); font-style: italic; justify-content: center; }
+
+/* ── Footer ──────────────────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 1.25rem;
+  font-size: .8rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}

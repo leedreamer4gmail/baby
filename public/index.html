@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Baby Tracker 🍼</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🍼 Baby Tracker</h1>
+    <p>Log and monitor your baby's daily activities</p>
+  </header>
+
+  <main>
+    <section class="log-form card">
+      <h2>Log Activity</h2>
+      <form id="activity-form">
+        <label for="activity-type">Activity</label>
+        <select id="activity-type" required>
+          <option value="">-- Select --</option>
+          <option value="feeding">🍼 Feeding</option>
+          <option value="sleep">😴 Sleep</option>
+          <option value="diaper">🚼 Diaper Change</option>
+          <option value="play">🧸 Play</option>
+          <option value="bath">🛁 Bath</option>
+          <option value="medicine">💊 Medicine</option>
+        </select>
+
+        <label for="activity-note">Note (optional)</label>
+        <input type="text" id="activity-note" placeholder="e.g. 120 ml formula, 2 hours nap…" />
+
+        <button type="submit">+ Add Entry</button>
+      </form>
+    </section>
+
+    <section class="summary card">
+      <h2>Today's Summary</h2>
+      <div id="summary-stats">
+        <div class="stat" id="stat-feeding"><span class="icon">🍼</span><span class="count" id="count-feeding">0</span><span class="label">Feedings</span></div>
+        <div class="stat" id="stat-sleep"><span class="icon">😴</span><span class="count" id="count-sleep">0</span><span class="label">Sleeps</span></div>
+        <div class="stat" id="stat-diaper"><span class="icon">🚼</span><span class="count" id="count-diaper">0</span><span class="label">Diapers</span></div>
+        <div class="stat" id="stat-play"><span class="icon">🧸</span><span class="count" id="count-play">0</span><span class="label">Plays</span></div>
+        <div class="stat" id="stat-bath"><span class="icon">🛁</span><span class="count" id="count-bath">0</span><span class="label">Baths</span></div>
+        <div class="stat" id="stat-medicine"><span class="icon">💊</span><span class="count" id="count-medicine">0</span><span class="label">Medicines</span></div>
+      </div>
+    </section>
+
+    <section class="log-list card">
+      <h2>Activity Log</h2>
+      <div id="clear-btn-container">
+        <button id="clear-btn" class="danger">Clear All</button>
+      </div>
+      <ul id="activity-list">
+        <li class="empty-state">No activities logged yet. Add your first entry above!</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>Baby Tracker &mdash; keeping track so you don't have to remember everything 💛</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

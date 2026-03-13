@@ -1,0 +1,12 @@
+{
+  "name": "baby-tracker",
+  "version": "1.0.0",
+  "description": "A simple baby activity tracker web application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/app.test.js"
+  },
+  "keywords": ["baby", "tracker", "parenting"],
+  "license": "MIT"
+}
