@@ -1,0 +1,42 @@
+[
+  {
+    "time": "2026-03-13T09:21:51",
+    "func": "upgrade_tool",
+    "error": "[FAIL] minimax 请求失败: HTTPSConnectionPool(host='api.minimax.io', port=443): Max retries exceeded with url: /v1/chat/completions (Caused by ProxyError('Unable to connect to proxy', RemoteDisconnected('R",
+    "context": {
+      "name": "http_enum_writable_dirs"
+    }
+  },
+  {
+    "time": "2026-03-13T09:33:23",
+    "func": "fix_tool",
+    "error": "[FAIL] minimax 请求失败: HTTPSConnectionPool(host='api.minimax.io', port=443): Read timed out. (read timeout=180)",
+    "context": {
+      "name": "http_enum_writable_dirs"
+    }
+  },
+  {
+    "time": "2026-03-13T10:54:45",
+    "func": "fix_tool",
+    "error": "[FAIL] minimax 请求失败: Response ended prematurely",
+    "context": {
+      "name": "deploy_http_post_multipart"
+    }
+  },
+  {
+    "time": "2026-03-13T11:06:52",
+    "func": "upgrade_tool",
+    "error": "[FAIL] minimax 请求失败: HTTPSConnectionPool(host='api.minimax.io', port=443): Max retries exceeded with url: /v1/chat/completions (Caused by ProxyError('Unable to connect to proxy', RemoteDisconnected('R",
+    "context": {
+      "name": "deploy_http_post_multipart"
+    }
+  },
+  {
+    "time": "2026-03-13T12:42:13",
+    "func": "fix_tool",
+    "error": "[FAIL] minimax 请求失败: HTTPSConnectionPool(host='api.minimax.io', port=443): Read timed out. (read timeout=180)",
+    "context": {
+      "name": "deploy_http_post_multipart"
+    }
+  }
+]

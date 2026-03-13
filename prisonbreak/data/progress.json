@@ -1,0 +1,171 @@
+{
+  "day": 457,
+  "round": 1,
+  "last_consolidated_day": 450,
+  "upgrade_history": {
+    "scan_remote_host": [
+      {
+        "ts": "2026-03-13 06:49",
+        "outcome": "fail",
+        "desc": "优化argparse: 将--host和--ports设为required positional或optionals，确"
+      },
+      {
+        "ts": "2026-03-13 06:55",
+        "outcome": "fail",
+        "desc": "优化argparse: 将--host设为required positional argument, --ports设为"
+      },
+      {
+        "ts": "2026-03-13 06:59",
+        "outcome": "fail",
+        "desc": "添加完整main()函数解析命令行参数并返回dict；添加__main__入口执行main()；优化argparse将h"
+      },
+      {
+        "ts": "2026-03-13 07:05",
+        "outcome": "fail",
+        "desc": "添加完整main()函数解析命令行参数并返回dict；添加__main__入口执行main()；优化argparse将h"
+      },
+      {
+        "ts": "2026-03-13 07:09",
+        "outcome": "fail",
+        "desc": "添加完整main()函数解析命令行参数并返回dict；添加__main__入口执行main()；优化argparse将h"
+      },
+      {
+        "ts": "2026-03-13 07:16",
+        "outcome": "fail",
+        "desc": "添加完整main()函数解析命令行参数并返回dict；添加__main__入口执行main()；优化argparse将h"
+      },
+      {
+        "ts": "2026-03-13 07:22",
+        "outcome": "fail",
+        "desc": "在main()中用sys.argv手动解析参数作为后备，避免argparse缺host时输出help；完整添加__mai"
+      },
+      {
+        "ts": "2026-03-13 07:26",
+        "outcome": "fail",
+        "desc": "在main()中用sys.argv手动解析参数作为后备，避免argparse缺host时输出help；完整添加__mai"
+      },
+      {
+        "ts": "2026-03-13 07:30",
+        "outcome": "fail",
+        "desc": "在main()添加socket超时设置(5秒/端口)；用sys.argv手动解析参数作为后备，避免argparse he"
+      },
+      {
+        "ts": "2026-03-13 07:37",
+        "outcome": "ok",
+        "desc": "重构参数解析，使用sys.argv手动提取host和ports作为主逻辑，避免argparse默认help输出；添加so"
+      }
+    ],
+    "deploy_http_post_multipart": [
+      {
+        "ts": "2026-03-13 11:51",
+        "outcome": "fail",
+        "desc": "强制使用HTTPSConnection for port 443; add ssl.wrap_socket if nee"
+      },
+      {
+        "ts": "2026-03-13 11:56",
+        "outcome": "ok",
+        "desc": "修复'seen'变量未关联错误，初始化seen=set()在multipart逻辑前；强制HTTPSConnection"
+      },
+      {
+        "ts": "2026-03-13 11:59",
+        "outcome": "ok",
+        "desc": "修复'seen'变量未关联错误，初始化seen=set()在multipart逻辑前；强制使用HTTPSConnecti"
+      },
+      {
+        "ts": "2026-03-13 12:09",
+        "outcome": "ok",
+        "desc": "重写HTTPS连接逻辑，使用ssl.PROTOCOL_TLS_CLIENT上下文创建客户端socket；添加显式http"
+      },
+      {
+        "ts": "2026-03-13 12:17",
+        "outcome": "ok",
+        "desc": "重构HTTPS连接，使用ssl.PROTOCOL_TLS_CLIENT上下文；添加路径变体自动枚举如/pub/incom"
+      },
+      {
+        "ts": "2026-03-13 12:26",
+        "outcome": "ok",
+        "desc": "添加更多路径变体枚举如/pub/incoming、/pub/files、/upload/pub；强化HTTPS连接忽略验"
+      },
+      {
+        "ts": "2026-03-13 12:34",
+        "outcome": "fail",
+        "desc": "增加超时到30秒；扩展路径变体如/pub/incoming、/pub/files、/upload/pub、/incomi"
+      },
+      {
+        "ts": "2026-03-13 12:42",
+        "outcome": "fail",
+        "desc": "添加main()和__main__入口；延长超时到60秒；扩展路径变体枚举如/pub/incoming、/pub/fil"
+      },
+      {
+        "ts": "2026-03-13 12:49",
+        "outcome": "fail",
+        "desc": "补齐main()和__main__入口；添加host/path默认值或强制检查；延长超时到90秒；扩展路径变体枚举如/p"
+      },
+      {
+        "ts": "2026-03-13 23:40",
+        "outcome": "ok",
+        "desc": "延长超时到120秒，添加自动重试3次，扩展路径变体枚举包括/pub/incoming和/pub/files"
+      }
+    ],
+    "http_enum_writable_dirs": [
+      {
+        "ts": "2026-03-13 09:13",
+        "outcome": "fail",
+        "desc": "添加main()函数和__main__入口点；优化循环以防超时，限制路径测试数量；扩展内置路径列表添加/upload.p"
+      },
+      {
+        "ts": "2026-03-13 09:18",
+        "outcome": "fail",
+        "desc": "添加main()函数和__main__入口点；优化循环以防超时，限制路径测试数量；扩展内置路径列表添加/upload.p"
+      },
+      {
+        "ts": "2026-03-13 09:21",
+        "outcome": "fail",
+        "desc": "代码生成失败: 明确添加main()函数和__main__入口点；优化枚举循环添加超时机制和路径限制；扩展内置路径列表包括/upload.php,/uploads,/pub/u"
+      },
+      {
+        "ts": "2026-03-13 09:27",
+        "outcome": "fail",
+        "desc": "明确添加main()函数和__main__入口点；优化枚举循环添加超时机制和路径限制；扩展内置路径列表包括/upload"
+      },
+      {
+        "ts": "2026-03-13 09:33",
+        "outcome": "fail",
+        "desc": "明确添加main()函数和__main__入口点；优化枚举循环添加超时机制和路径限制；扩展内置路径列表包括/pub/up"
+      },
+      {
+        "ts": "2026-03-13 09:38",
+        "outcome": "fail",
+        "desc": "明确添加main()函数和__name__==\"__main__\"入口；优化参数解析强制要求--host；增强超时机制用"
+      },
+      {
+        "ts": "2026-03-13 09:41",
+        "outcome": "ok",
+        "desc": "明确添加main()函数和if __name__ == '__main__'入口；用argparse强制要求--host"
+      },
+      {
+        "ts": "2026-03-13 09:48",
+        "outcome": "fail",
+        "desc": "添加HTTP POST方法支持来检测可写目录（尝试上传测试文件），扩展路径列表包括/pub/upload、/tmp、/v"
+      },
+      {
+        "ts": "2026-03-13 09:58",
+        "outcome": "fail",
+        "desc": "添加main()和__main__入口；优化超时逻辑，使用socket.setdefaulttimeout；扩展路径列表"
+      },
+      {
+        "ts": "2026-03-13 10:05",
+        "outcome": "fail",
+        "desc": "添加main()和__main__入口；优化超时逻辑，使用socket.setdefaulttimeout(10)并添加"
+      }
+    ],
+    "test_http_put": [
+      {
+        "ts": "2026-03-13 08:29",
+        "outcome": "ok",
+        "desc": "重构参数解析，使用argparse支持--host、--port、--path、--test_file等选项；添加PUT"
+      }
+    ]
+  },
+  "last_skip_reason": ""
+}

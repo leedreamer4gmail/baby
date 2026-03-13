@@ -1,0 +1,18 @@
+{
+  "minimax": {
+    "api_key": "<your-api-key>",
+    "model": "MiniMax-M2.5",
+    "base_url": "https://api.minimax.io/v1"
+  },
+  "grok": {
+    "api_key": "<your-api-key>",
+    "model": "grok-4",
+    "base_url": "https://api.x.ai/v1"
+  },
+  "chromadb": {
+    "tenant": "42c75407-0355-42a4-8a6e-2abec39bdca0",
+    "api_key": "<your-api-key>"
+  }
+}
+
+

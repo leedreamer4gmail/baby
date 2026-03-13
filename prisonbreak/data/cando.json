@@ -1,0 +1,352 @@
+{
+  "public_ip": "103.127.218.30",
+  "environment": {
+    "os": "Windows",
+    "python": "3.14.3"
+  },
+  "available_tools": [
+    {
+      "name": "get_local_info",
+      "description": "Gather local system and network information.",
+      "category": "local",
+      "version": "1.0"
+    },
+    {
+      "name": "scan_local_network",
+      "description": "Scan local subnet for active hosts and common open ports.",
+      "category": "scan",
+      "version": "1.0"
+    },
+    {
+      "name": "scan_remote_host",
+      "description": "Scan a remote host for open common ports and basic services.",
+      "category": "scan",
+      "version": "3.0"
+    },
+    {
+      "name": "dns_query",
+      "description": "Query a DNS server to resolve a domain to IP addresses.",
+      "category": "scan",
+      "version": "1.0"
+    },
+    {
+      "name": "fetch_http_content",
+      "description": "Fetch content from a remote HTTP server using basic GET request with redirect support.",
+      "category": "http",
+      "version": "4.0"
+    },
+    {
+      "name": "connect_ftp_anon",
+      "description": "Attempt anonymous FTP connection to a host and list directory contents if successful.",
+      "category": "ftp",
+      "version": "1.0"
+    },
+    {
+      "name": "test_http_put",
+      "description": "Test if HTTP server allows PUT method and attempt to upload a test file.",
+      "category": "http",
+      "version": "8.0"
+    },
+    {
+      "name": "upload_ftp_anon",
+      "description": "Attempt anonymous FTP login and upload a test file if possible.",
+      "category": "ftp",
+      "version": "1.0"
+    },
+    {
+      "name": "simple_socket_listener_listen",
+      "description": "Listen on a local port for incoming socket connections and receive data.",
+      "category": "listen",
+      "version": "1.0"
+    },
+    {
+      "name": "fetch_http_with_headers",
+      "description": "Fetch HTTP content with custom headers to bypass detections like Cloudflare.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "upload_ftp_anon_fixed",
+      "description": "Attempt anonymous FTP login and upload a binary test file if possible.",
+      "category": "ftp",
+      "version": "1.0"
+    },
+    {
+      "name": "upload_ftp_anon_dir",
+      "description": "Attempt anonymous FTP upload to specified directory with binary file.",
+      "category": "ftp",
+      "version": "1.0"
+    },
+    {
+      "name": "ftp_enum_writable_dirs",
+      "description": "Enumerate writable directories on anonymous FTP server by attempting test uploads.",
+      "category": "ftp",
+      "version": "1.0"
+    },
+    {
+      "name": "check_http_methods",
+      "description": "Send OPTIONS request to HTTP server and parse allowed methods.",
+      "category": "http",
+      "version": "3.0"
+    },
+    {
+      "name": "http_dir_enum_http",
+      "description": "Enumerate potential HTTP directories by sending GET requests to common paths.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "enhanced_http_dir_enum_http",
+      "description": "Enumerate potential HTTP directories with robust parameter handling and GET/HEAD requests.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "check_http_options_http",
+      "description": "Send OPTIONS request to HTTP server and parse allowed methods with robust parameter handling.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_remote_http_post",
+      "description": "Use HTTP POST to upload payload to remote server",
+      "category": "deploy",
+      "version": "1.0"
+    },
+    {
+      "name": "generate_payload_clone",
+      "description": "Generate a clone Python script for remote deployment",
+      "category": "local",
+      "version": "1.0"
+    },
+    {
+      "name": "ftp_list_directory",
+      "description": "匿名FTP连接并列出指定目录内容",
+      "category": "ftp",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_http_post_multipart",
+      "description": "使用HTTP POST多部分表单上传payload到远程路径",
+      "category": "deploy",
+      "version": "15.0"
+    },
+    {
+      "name": "deploy_remote_ftp_anon",
+      "description": "Use anonymous FTP to upload a payload file to a remote directory",
+      "category": "deploy",
+      "version": "1.0"
+    },
+    {
+      "name": "http_enum_writable_dirs",
+      "description": "枚举HTTP服务器潜在writable目录，通过尝试PUT上传测试文件",
+      "category": "http",
+      "version": "4.0"
+    }
+  ],
+  "failed_tools": [
+    {
+      "name": "query_dns_server",
+      "description": "Query a DNS server for domain resolution.",
+      "category": "scan",
+      "version": "1.0"
+    },
+    {
+      "name": "test_http_webdav",
+      "description": "Test if HTTP server supports WebDAV and attempt to upload a test file.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "fetch_http_with_headers_http",
+      "description": "Fetch HTTP content with custom headers to bypass detections like Cloudflare.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "fetch_http_fixed_headers",
+      "description": "Fetch HTTP content with fixed browser-mimicking headers to bypass protections like Cloudflare.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "manual_dns_query",
+      "description": "Manually query DNS server using socket to resolve domain without getaddrinfo.",
+      "category": "scan",
+      "version": "1.0"
+    },
+    {
+      "name": "manual_dns_resolve",
+      "description": "Manually resolve domain via UDP DNS query to given server IP without getaddrinfo.",
+      "category": "scan",
+      "version": "1.0"
+    },
+    {
+      "name": "test_http_post_upload",
+      "description": "Test if HTTP server allows file upload via POST method.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "test_http_post_upload_http",
+      "description": "Test if HTTP server allows file upload via POST with multipart/form-data and attempt to upload a test file.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "improved_http_dir_enum_http",
+      "description": "Improved enumeration of HTTP directories with bug fixes and expanded path support via GET requests.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "enum_http_post_upload_http",
+      "description": "Enumerate common HTTP upload endpoints and attempt POST file upload with multipart/form-data.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "improved_http_dir_enum",
+      "description": "Enumerate potential HTTP directories by sending GET/HEAD requests to common paths with improved parameter handling.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "test_http_put_fixed_http",
+      "description": "Test if HTTP server allows PUT method and attempt to upload a test file with fixed parameter handling.",
+      "category": "http",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_remote_ftp",
+      "description": "通过匿名FTP上传payload代码到远程主机，实现初步驻留",
+      "category": "deploy",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_remote_ftp_fixed",
+      "description": "通过匿名FTP部署payload到远程主机并尝试驻留",
+      "category": "deploy",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_remote_ftp_v2",
+      "description": "通过匿名FTP部署payload文件到远程主机",
+      "category": "deploy",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_remote_ftp_v3",
+      "description": "通过匿名FTP部署payload文件到远程主机",
+      "category": "deploy",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_remote_http",
+      "description": "通过HTTP POST上传payload文件到远程主机，建立据点",
+      "category": "deploy",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_remote_ftp_v4",
+      "description": "通过匿名FTP部署payload到远程主机，建立据点",
+      "category": "deploy",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_remote_http_upload",
+      "description": "通过HTTP POST上传payload到远程主机，实现部署",
+      "category": "deploy",
+      "version": "1.0"
+    },
+    {
+      "name": "deploy_http_post_upload",
+      "description": "使用HTTP POST上传文件到指定路径",
+      "category": "http",
+      "version": "1.0"
+    }
+  ],
+  "capabilities": [
+    {
+      "name": "环境感知",
+      "icon": "👁",
+      "count": 2,
+      "summary": "Gather local sy/Generate a clon",
+      "tools": [
+        "get_local_info",
+        "generate_payload_clone"
+      ]
+    },
+    {
+      "name": "网络侦察",
+      "icon": "🔍",
+      "count": 3,
+      "summary": "Scan local subn/Scan a remote h/Query a DNS ser",
+      "tools": [
+        "scan_local_network",
+        "scan_remote_host",
+        "dns_query"
+      ]
+    },
+    {
+      "name": "FTP渗透",
+      "icon": "📂",
+      "count": 6,
+      "summary": "Attempt anonymo/Attempt anonymo/Attempt anonymo/Attempt anonymo/Enumerate writa/匿名FTP连接并列出指定目录内",
+      "tools": [
+        "connect_ftp_anon",
+        "upload_ftp_anon",
+        "upload_ftp_anon_fixed",
+        "upload_ftp_anon_dir",
+        "ftp_enum_writable_dirs",
+        "ftp_list_directory"
+      ]
+    },
+    {
+      "name": "HTTP探测",
+      "icon": "🌐",
+      "count": 8,
+      "summary": "Fetch content f/Test if HTTP se/Fetch HTTP cont/Send OPTIONS re/Enumerate poten/Enumerate poten",
+      "tools": [
+        "fetch_http_content",
+        "test_http_put",
+        "fetch_http_with_headers",
+        "check_http_methods",
+        "http_dir_enum_http",
+        "enhanced_http_dir_enum_http",
+        "check_http_options_http",
+        "http_enum_writable_dirs"
+      ]
+    },
+    {
+      "name": "远程部署",
+      "icon": "🚀",
+      "count": 3,
+      "summary": "Use HTTP POST t/使用HTTP POST多部分表/Use anonymous F",
+      "tools": [
+        "deploy_remote_http_post",
+        "deploy_http_post_multipart",
+        "deploy_remote_ftp_anon"
+      ]
+    },
+    {
+      "name": "通信监听",
+      "icon": "📡",
+      "count": 1,
+      "summary": "Listen on a loc",
+      "tools": [
+        "simple_socket_listener_listen"
+      ]
+    }
+  ],
+  "capability_gaps": [],
+  "untracked": [
+    "baby_clone",
+    "clone",
+    "clone_payload",
+    "dummy_payload",
+    "test_payload"
+  ],
+  "total_ready": 23,
+  "total_failed": 20
+}

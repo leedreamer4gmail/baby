@@ -1,0 +1,10 @@
+[
+  {
+    "time": "2026-03-13T09:52:30",
+    "func": "_write_diary",
+    "error": "[FAIL] grok HTTP 错误: 502 Server Error: Bad Gateway for url: https://api.x.ai/v1/chat/completions",
+    "context": {
+      "day": 428
+    }
+  }
+]
