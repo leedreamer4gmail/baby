@@ -1,2 +1,0 @@
-requests>=2.28.0
-chromadb>=0.5.0
