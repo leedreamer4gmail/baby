@@ -155,6 +155,7 @@ def call_llm(
     messages: list[dict[str, str]],
     reason: str,
     temperature: float = 0.7,
+    model_key: str = "default",
 ) -> str:
     """调用 LLM API
 
@@ -163,13 +164,17 @@ def call_llm(
         messages: 对话消息
         reason: 调用理由（打印日志用）
         temperature: 生成温度
+        model_key: models 字典的键（grok 专用，minimax 忽略）
 
     Returns:
         LLM 响应文本，失败返回 "[FAIL] ..."
     """
     cfg = load_config()[name]
     api_key: str = cfg["api_key"].strip()
-    model: str = cfg["model"]
+    if "models" in cfg:
+        model: str = cfg["models"].get(model_key, cfg["models"]["default"])
+    else:
+        model = cfg["model"]
     base_url: str = cfg["base_url"]
 
     print(f"[LLM] 调用 {name.upper()} ({model}) - 原因: {reason}", flush=True)
@@ -228,6 +233,7 @@ def call_llm_with_think(
     messages: list[dict[str, str]],
     reason: str,
     temperature: float = 0.7,
+    model_key: str = "default",
 ) -> tuple[str, str]:
     """调用 LLM，保留 <think> 推理过程，返回 (think内容, 正式回答)
 
@@ -235,7 +241,10 @@ def call_llm_with_think(
     """
     cfg = load_config()[name]
     api_key: str = cfg["api_key"].strip()
-    model: str = cfg["model"]
+    if "models" in cfg:
+        model: str = cfg["models"].get(model_key, cfg["models"]["default"])
+    else:
+        model = cfg["model"]
     base_url: str = cfg["base_url"]
 
     print(f"[LLM] 调用 {name.upper()} ({model}) - 原因: {reason}", flush=True)

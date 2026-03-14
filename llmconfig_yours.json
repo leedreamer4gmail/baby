@@ -1,18 +1,21 @@
 {
   "minimax": {
-    "api_key": "<your-api-key>",
+    "api_key": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "model": "MiniMax-M2.5",
     "base_url": "https://api.minimax.io/v1"
   },
   "grok": {
-    "api_key": "<your-api-key>",
-    "model": "grok-4",
+    "api_key": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "models": {
+      "default": "grok-4.20-beta-0309-reasoning",
+      "review": "grok-4.20-multi-agent-beta-0309",
+      "fast": "grok-4.20-beta-0309-non-reasoning",
+      "cheap": "grok-4-1-fast-reasoning"
+    },
     "base_url": "https://api.x.ai/v1"
   },
   "chromadb": {
     "tenant": "42c75407-0355-42a4-8a6e-2abec39bdca0",
-    "api_key": "<your-api-key>"
+    "api_key": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   }
 }
-
-

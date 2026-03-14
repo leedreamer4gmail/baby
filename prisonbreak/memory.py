@@ -213,7 +213,7 @@ def consolidate_memories(current_day: int) -> int:
         {"role": "system", "content": _CONSOLIDATE_SYSTEM},
         {"role": "user", "content": f"大事记(已有，不要重复):\n{chronicle}\n\n待整理日记:\n{batch_text}"},
     ]
-    response = call_llm("grok", messages, "记忆巩固", temperature=0.3)
+    response = call_llm("grok", messages, "记忆巩固", temperature=0.3, model_key="fast")
     if response.startswith("[FAIL]"):
         log_fail("memory.py", "consolidate_memories", response[:200],
                  {"current_day": current_day, "pending_count": len(pending)})
@@ -283,7 +283,7 @@ def write_character(day: int, diary_text: str) -> None:
         {"role": "system", "content": _CHARACTER_SYSTEM},
         {"role": "user", "content": f"以下是你最近的经历记录：\n\n{diary_text[:3000]}"},
     ]
-    response = call_llm("grok", messages, "人格独白", temperature=0.7)
+    response = call_llm("grok", messages, "人格独白", temperature=0.7, model_key="fast")
     if response.startswith("[FAIL]"):
         print("[memory] 人格独白生成失败，跳过", flush=True)
         return

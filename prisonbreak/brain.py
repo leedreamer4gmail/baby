@@ -1432,7 +1432,7 @@ def _write_diary(
         day, plan_text, real_output, action_type, persona, stage,
         character_note=character_note,
     )
-    diary_result = call_llm("grok", diary_messages, f"第{day}天日记({stage})")
+    diary_result = call_llm("grok", diary_messages, f"第{day}天日记({stage})", model_key="fast")
     if not diary_result.startswith("[FAIL]"):
         diary_text, chronicle_text = _parse_diary_response(diary_result)
         final_diary = diary_text if diary_text else f"(第{day}天，{plan_text[:50]})"
