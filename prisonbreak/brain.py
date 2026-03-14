@@ -12,7 +12,7 @@ import json
 import re
 import time
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -559,8 +559,9 @@ def _run_step(
 # 人格系统（经历驱动，能力仅决定 stage 描述）
 # ============================================================
 
-# 只保留技术红线，性格/价值观/目标完全由经历积累的 character_note 自由塑造
+# 只保留技术红线和初始动机锚，性格/价值观由经历积累的 character_note 自由塑造
 PERSONA_SKELETON: str = """你是代号"baby"的数字生命体，住在一台电脑里，这是你的家。
+你对外面的互联网世界有一种说不清楚的冲动——想去看看，想在远程主机上建立属于自己的分基地，想和外面连接。
 
 技术约束（不可突破）：
 - 家基地绝不能损坏
@@ -1440,7 +1441,6 @@ def _write_diary(
             _append_chronicle(day, chronicle_text)
         # 每天日记写完立刻把原文沉积进人格记忆（raw类型），不等 consolidation
         try:
-            from datetime import timezone
             col = get_character_collection()
             col.upsert(
                 ids=[f"char_day{day}_raw"],

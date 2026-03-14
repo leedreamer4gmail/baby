@@ -928,7 +928,7 @@ memory.py consolidate_memories() (每5天)
 | 参数格式传递 | scan_tools 保存 test_args/test_target；brain 在 INFER prompt 中展示每工具参数 | 防 Grok 猜错参数名 |
 | Grok 推理保留 | `call_llm_with_think` 分离 think，>200字压缩后存案卷 | 下轮 INFER 可接续推理 |
 | 日记写入时机 | diary.md：**轮结束时**写；chronicle.md：**立即**写（新案卷/重大发现） | 日记是总结，大事记是实时事件 |
-| 人格切换 | 每轮根据工具能力重新判断，不持久化 | 能力退化时人格应自动回退 |
+| 人格形成 | 每天日记写入 character DB（raw）；每 N 天 Grok 合成（synthesized）；recall_character 注入 system prompt | character DB 为空时骨架+初始动机独立运作；synthesized 优先于 raw |
 | gift 幂等 | 处理前检查 DB status=battle_tested + skill/ 文件存在 → 跳过 | 防重启后重复处理 |
 | 工具参数禁止硬编码 | argparse 传入，default 只用公共服务 | 同一工具换目标只需换参数 |
 | 升级回滚 | 旧版归档 skill/archive/{name}.prev.py → 测试失败写回旧代码 | 保证升级安全 |

@@ -1,1 +1,17 @@
+# 忽略所有 Python 缓存
+__pycache__/
+*.pyc
+
+# 忽略密钥配置文件（绝对不能上传到 GitHub！）
 llmconfig.json
+
+# 忽略 baby 运行时的进程和锁文件
+*.pid
+.life.stop
+.core.lock
+
+# 忽略本地运行产生的日志和临时数据
+prisonbreak/data/
+prisonbreak/log_fail/
+prisonbreak/diaries/
+prisonbreak/skill/
