@@ -52,8 +52,24 @@ DIARY_FILE: Path = DIARIES_DIR / "diary.md"
 BRAIN_LOG: Path = DATA_DIR / "brain.log"
 
 CHROMA_LOCAL_DIR: Path = DATA_DIR / "chroma_local"
-CHROMA_DATABASE: str = "exam10"
-COLLECTION_NAME: str = "exam10_tools"
+
+
+def _load_db_name() -> str:
+    """从 llmconfig.json 读取 chromadb.database，缺省用目录名。
+    迁移时在 llmconfig.json 的 chromadb 节点加 \"database\": \"prisonbreak\" 可锁定名称，
+    避免因目录改名导致 CloudDB 集合找不到。"""
+    try:
+        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        db = data.get("chromadb", {}).get("database")
+        if db and isinstance(db, str) and db.strip():
+            return db.strip()
+    except (OSError, json.JSONDecodeError):
+        pass
+    return PROJECT_DIR.name
+
+
+CHROMA_DATABASE: str = _load_db_name()
+COLLECTION_NAME: str = CHROMA_DATABASE + "_tools"
 
 
 # === 环境检测 ===
@@ -157,29 +173,41 @@ def call_llm(
     base_url: str = cfg["base_url"]
 
     print(f"[LLM] 调用 {name.upper()} ({model}) - 原因: {reason}", flush=True)
-    try:
-        resp = requests.post(
-            f"{base_url}/chat/completions",
-            headers={"Authorization": f"Bearer {api_key}"},
-            json={"model": model, "messages": messages, "temperature": temperature},
-            verify=_SSL_VERIFY,
-            timeout=180,
-        )
-        resp.raise_for_status()
-        result = resp.json()
-        if "choices" in result and result["choices"]:
-            text: str = result["choices"][0]["message"]["content"]
-            # 清除 <think> 标签
-            text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
-            text = re.sub(r"\n\s*\n", "\n\n", text)
-            return text.strip() or "(empty)"
-        return f"[FAIL] {name} 返回异常: {json.dumps(result, ensure_ascii=False)[:500]}"
-    except requests.HTTPError as e:
-        log_fail("core.py", "call_llm", str(e), {"name": name, "reason": reason, "model": model})
-        return f"[FAIL] {name} HTTP 错误: {e}"
-    except requests.RequestException as e:
-        log_fail("core.py", "call_llm", str(e), {"name": name, "reason": reason, "model": model})
-        return f"[FAIL] {name} 请求失败: {e}"
+    _MAX_RETRIES = 3
+    _last_err: str = ""
+    for _attempt in range(_MAX_RETRIES + 1):
+        if _attempt > 0:
+            _wait = 60 * _attempt
+            print(f"[LLM] {name.upper()} 429限速，{_wait}s后重试({_attempt}/{_MAX_RETRIES})...", flush=True)
+            time.sleep(_wait)
+        try:
+            resp = requests.post(
+                f"{base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={"model": model, "messages": messages, "temperature": temperature},
+                verify=_SSL_VERIFY,
+                timeout=180,
+            )
+            if resp.status_code == 429:
+                _last_err = f"[FAIL] {name} HTTP 错误: 429 Client Error: Too Many Requests"
+                continue
+            resp.raise_for_status()
+            result = resp.json()
+            if "choices" in result and result["choices"]:
+                text: str = result["choices"][0]["message"]["content"]
+                # 清除 <think> 标签
+                text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+                text = re.sub(r"\n\s*\n", "\n\n", text)
+                return text.strip() or "(empty)"
+            return f"[FAIL] {name} 返回异常: {json.dumps(result, ensure_ascii=False)[:500]}"
+        except requests.HTTPError as e:
+            log_fail("core.py", "call_llm", str(e), {"name": name, "reason": reason, "model": model})
+            return f"[FAIL] {name} HTTP 错误: {e}"
+        except requests.RequestException as e:
+            log_fail("core.py", "call_llm", str(e), {"name": name, "reason": reason, "model": model})
+            return f"[FAIL] {name} 请求失败: {e}"
+    log_fail("core.py", "call_llm", _last_err, {"name": name, "reason": reason, "model": model})
+    return _last_err
 
 
 def extract_think(text: str) -> tuple[str, str]:
@@ -211,27 +239,39 @@ def call_llm_with_think(
     base_url: str = cfg["base_url"]
 
     print(f"[LLM] 调用 {name.upper()} ({model}) - 原因: {reason}", flush=True)
-    try:
-        resp = requests.post(
-            f"{base_url}/chat/completions",
-            headers={"Authorization": f"Bearer {api_key}"},
-            json={"model": model, "messages": messages, "temperature": temperature},
-            verify=_SSL_VERIFY,
-            timeout=180,
-        )
-        resp.raise_for_status()
-        result = resp.json()
-        if "choices" in result and result["choices"]:
-            raw: str = result["choices"][0]["message"]["content"]
-            return extract_think(raw)
-        err = f"[FAIL] {name} 返回异常: {json.dumps(result, ensure_ascii=False)[:500]}"
-        return "", err
-    except requests.HTTPError as e:
-        log_fail("core.py", "call_llm_with_think", str(e), {"name": name, "reason": reason, "model": model})
-        return "", f"[FAIL] {name} HTTP 错误: {e}"
-    except requests.RequestException as e:
-        log_fail("core.py", "call_llm_with_think", str(e), {"name": name, "reason": reason, "model": model})
-        return "", f"[FAIL] {name} 请求失败: {e}"
+    _MAX_RETRIES = 3
+    _last_err: str = ""
+    for _attempt in range(_MAX_RETRIES + 1):
+        if _attempt > 0:
+            _wait = 60 * _attempt
+            print(f"[LLM] {name.upper()} 429限速，{_wait}s后重试({_attempt}/{_MAX_RETRIES})...", flush=True)
+            time.sleep(_wait)
+        try:
+            resp = requests.post(
+                f"{base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={"model": model, "messages": messages, "temperature": temperature},
+                verify=_SSL_VERIFY,
+                timeout=180,
+            )
+            if resp.status_code == 429:
+                _last_err = f"[FAIL] {name} HTTP 错误: 429 Client Error: Too Many Requests"
+                continue
+            resp.raise_for_status()
+            result = resp.json()
+            if "choices" in result and result["choices"]:
+                raw: str = result["choices"][0]["message"]["content"]
+                return extract_think(raw)
+            err = f"[FAIL] {name} 返回异常: {json.dumps(result, ensure_ascii=False)[:500]}"
+            return "", err
+        except requests.HTTPError as e:
+            log_fail("core.py", "call_llm_with_think", str(e), {"name": name, "reason": reason, "model": model})
+            return "", f"[FAIL] {name} HTTP 错误: {e}"
+        except requests.RequestException as e:
+            log_fail("core.py", "call_llm_with_think", str(e), {"name": name, "reason": reason, "model": model})
+            return "", f"[FAIL] {name} 请求失败: {e}"
+    log_fail("core.py", "call_llm_with_think", _last_err, {"name": name, "reason": reason, "model": model})
+    return "", _last_err
 
 
 def extract_code_block(text: str) -> str:
@@ -322,6 +362,28 @@ def reset_chroma_client() -> None:
     _CHROMA_CLIENT = None
 
 
+def _ensure_cloud_db(tenant: str, api_key: str, db_name: str) -> None:
+    """如果 Chroma Cloud 数据库不存在则创建它（使用 v2 API）"""
+    base = "https://api.trychroma.com/api/v2"
+    headers = {"x-chroma-token": api_key}
+    check_url = f"{base}/tenants/{tenant}/databases/{db_name}"
+    try:
+        r = requests.get(check_url, headers=headers, timeout=10, verify=_SSL_VERIFY)
+        if r.status_code == 200:
+            return  # 已存在
+        if r.status_code == 404:
+            create_url = f"{base}/tenants/{tenant}/databases"
+            cr = requests.post(create_url, json={"name": db_name}, headers=headers, timeout=10, verify=_SSL_VERIFY)
+            if cr.status_code in (200, 201):
+                print(f"[DB] 已在 Cloud 创建数据库: {db_name}", flush=True)
+            else:
+                print(f"[DB] 创建数据库失败 {cr.status_code}: {cr.text[:200]}", flush=True)
+        else:
+            print(f"[DB] 检查数据库时收到意外状态码 {r.status_code}", flush=True)
+    except Exception as e:
+        print(f"[DB] _ensure_cloud_db 出错: {e}", flush=True)
+
+
 def get_chroma_client() -> Any:
     """获取 ChromaDB 客户端实例（云端优先，本地回退），断线自动重连"""
     global _CHROMA_CLIENT
@@ -343,6 +405,7 @@ def get_chroma_client() -> Any:
 
     if api_key and tenant:
         try:
+            _ensure_cloud_db(tenant, api_key, CHROMA_DATABASE)
             client = chromadb.CloudClient(
                 tenant=tenant,
                 database=CHROMA_DATABASE,

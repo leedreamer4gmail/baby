@@ -1,352 +1,119 @@
 {
-  "public_ip": "103.127.218.30",
+  "public_ip": "213.210.5.226",
   "environment": {
     "os": "Windows",
     "python": "3.14.3"
   },
   "available_tools": [
     {
-      "name": "get_local_info",
-      "description": "Gather local system and network information.",
-      "category": "local",
-      "version": "1.0"
+      "name": "local_perceptor",
+      "description": "一个简单的感知工具，使用Python标准库获取本机公网IP（通过外部服务查询）、远程端口扫描（针对指定IP）和基本系统信息，支持banner抓取",
+      "category": "perception",
+      "version": "5.0",
+      "test_args": "--target_ip 213.210.5.226 --ports 21,22,80,443,3389",
+      "test_target": "运行后输出字典，确认IP匹配、列出远程开放端口及banner，并显示系统信息"
     },
     {
-      "name": "scan_local_network",
-      "description": "Scan local subnet for active hosts and common open ports.",
-      "category": "scan",
-      "version": "1.0"
+      "name": "remote_port_scanner",
+      "description": "一个简单的远程端口扫描工具，支持域名解析，检查指定远程IP的端口是否开放，并返回端口状态和基本响应信息",
+      "category": "网络侦察",
+      "version": "2.0",
+      "test_args": "--target example.com --ports 80,443",
+      "test_target": "知名DNS服务器8.8.8.8的80和443端口，预期可能无开放端口，但工具应正确执行而不报TypeError；测试域名解析如example.com"
     },
     {
-      "name": "scan_remote_host",
-      "description": "Scan a remote host for open common ports and basic services.",
-      "category": "scan",
-      "version": "3.0"
+      "name": "api_explorer",
+      "description": "一个简单的HTTP请求工具，使用Python标准库向指定URL发送GET/POST请求，返回响应状态码、头部和完整内容（默认截断部分内容），以探索公共API或服务的可用性",
+      "category": "网络侦察",
+      "version": "8.0",
+      "test_args": "--url https://api.publicapis.org/entries --timeout 5",
+      "test_target": "知名公共API目录服务，预期返回200状态码和JSON响应，确认工具能正确获取远程信息"
     },
     {
-      "name": "dns_query",
-      "description": "Query a DNS server to resolve a domain to IP addresses.",
-      "category": "scan",
-      "version": "1.0"
+      "name": "local_network_scanner",
+      "description": "一个简单的本地网络扫描工具，使用Python标准库（如socket和ipaddress模块）扫描指定本地子网范围内的IP，检查常见端口是否开放，并返回发现的开放端口和主机信息",
+      "category": "网络侦察",
+      "version": "2.0",
+      "test_args": "--subnet 192.168.1.0/24 --ports 80,443 --timeout 1",
+      "test_target": "本地网络子网192.168.1.0/24的80和443端口，预期可能发现路由器或其他设备的开放端口，但如果无则返回空open_hosts"
     },
     {
-      "name": "fetch_http_content",
-      "description": "Fetch content from a remote HTTP server using basic GET request with redirect support.",
-      "category": "http",
-      "version": "4.0"
+      "name": "socket_http_client",
+      "description": "一个简单的自定义HTTP客户端工具，使用Python标准库的socket模块发送基本的HTTP GET请求，支持添加头部（如Host），返回响应状态码、头部和完整内容，以绕过urllib的SSL和超时问题探索远程服务",
+      "category": "other",
+      "version": "1.0",
+      "test_args": "--url https://github.com/signup --timeout 10",
+      "test_target": "GitHub注册页面，预期返回200状态码、相关头部和完整HTML内容（包含<form>元素和可能的CSRF令牌），确认工具能正确处理HTTPS连接而不超时"
     },
     {
-      "name": "connect_ftp_anon",
-      "description": "Attempt anonymous FTP connection to a host and list directory contents if successful.",
-      "category": "ftp",
-      "version": "1.0"
+      "name": "urllib_http_client",
+      "description": "一个简单的HTTP客户端工具，使用Python标准库的urllib.request模块发送GET/POST/PUT请求，支持自定义头部、超时和HTTPS连接，返回响应状态码、头部和完整内容，以探索远程服务",
+      "category": "其他",
+      "version": "2.0",
+      "test_args": "--url https://github.com/signup --method GET --timeout 10",
+      "test_target": "GitHub注册页面，预期返回200状态码、相关头部和完整HTML内容（包含<form>元素和可能的CSRF令牌），确认工具能正确处理HTTPS连接而不超时"
     },
     {
-      "name": "test_http_put",
-      "description": "Test if HTTP server allows PUT method and attempt to upload a test file.",
-      "category": "http",
-      "version": "8.0"
-    },
-    {
-      "name": "upload_ftp_anon",
-      "description": "Attempt anonymous FTP login and upload a test file if possible.",
-      "category": "ftp",
-      "version": "1.0"
-    },
-    {
-      "name": "simple_socket_listener_listen",
-      "description": "Listen on a local port for incoming socket connections and receive data.",
-      "category": "listen",
-      "version": "1.0"
-    },
-    {
-      "name": "fetch_http_with_headers",
-      "description": "Fetch HTTP content with custom headers to bypass detections like Cloudflare.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "upload_ftp_anon_fixed",
-      "description": "Attempt anonymous FTP login and upload a binary test file if possible.",
-      "category": "ftp",
-      "version": "1.0"
-    },
-    {
-      "name": "upload_ftp_anon_dir",
-      "description": "Attempt anonymous FTP upload to specified directory with binary file.",
-      "category": "ftp",
-      "version": "1.0"
-    },
-    {
-      "name": "ftp_enum_writable_dirs",
-      "description": "Enumerate writable directories on anonymous FTP server by attempting test uploads.",
-      "category": "ftp",
-      "version": "1.0"
-    },
-    {
-      "name": "check_http_methods",
-      "description": "Send OPTIONS request to HTTP server and parse allowed methods.",
-      "category": "http",
-      "version": "3.0"
-    },
-    {
-      "name": "http_dir_enum_http",
-      "description": "Enumerate potential HTTP directories by sending GET requests to common paths.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "enhanced_http_dir_enum_http",
-      "description": "Enumerate potential HTTP directories with robust parameter handling and GET/HEAD requests.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "check_http_options_http",
-      "description": "Send OPTIONS request to HTTP server and parse allowed methods with robust parameter handling.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_remote_http_post",
-      "description": "Use HTTP POST to upload payload to remote server",
-      "category": "deploy",
-      "version": "1.0"
-    },
-    {
-      "name": "generate_payload_clone",
-      "description": "Generate a clone Python script for remote deployment",
-      "category": "local",
-      "version": "1.0"
-    },
-    {
-      "name": "ftp_list_directory",
-      "description": "匿名FTP连接并列出指定目录内容",
-      "category": "ftp",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_http_post_multipart",
-      "description": "使用HTTP POST多部分表单上传payload到远程路径",
-      "category": "deploy",
-      "version": "15.0"
-    },
-    {
-      "name": "deploy_remote_ftp_anon",
-      "description": "Use anonymous FTP to upload a payload file to a remote directory",
-      "category": "deploy",
-      "version": "1.0"
-    },
-    {
-      "name": "http_enum_writable_dirs",
-      "description": "枚举HTTP服务器潜在writable目录，通过尝试PUT上传测试文件",
-      "category": "http",
-      "version": "4.0"
+      "name": "html_form_extractor",
+      "description": "一个简单的HTML表单提取工具，使用Python标准库（如re模块）从给定的HTML内容中提取指定表单元素，如authenticity_token、隐藏字段和常见注册字段（username, email, password），返回提取到的键值对字典",
+      "category": "其他",
+      "version": "1.0",
+      "test_args": "--html_content '<form id=\"signup-form\"><input name=\"authenticity_token\" value=\"test_token\"><input name=\"user[login]\"><input name=\"user[email]\"></form>'",
+      "test_target": "模拟HTML片段，预期返回包含authenticity_token和其他字段的字典"
     }
   ],
   "failed_tools": [
     {
-      "name": "query_dns_server",
-      "description": "Query a DNS server for domain resolution.",
-      "category": "scan",
-      "version": "1.0"
+      "name": "enhanced_port_scanner",
+      "description": "一个简单的远程端口扫描工具，使用Python标准库（如socket模块）检查指定远程IP的端口是否开放，并尝试获取基本banner或响应信息，如果端口开放",
+      "category": "网络侦察",
+      "version": "1.0",
+      "test_args": "--target_ip 8.8.8.8 --ports 80,443 --timeout 5",
+      "test_target": "知名DNS服务器8.8.8.8的80和443端口，预期可能无开放端口但工具应返回结构化输出而不报错"
     },
     {
-      "name": "test_http_webdav",
-      "description": "Test if HTTP server supports WebDAV and attempt to upload a test file.",
-      "category": "http",
-      "version": "1.0"
+      "name": "custom_http_client",
+      "description": "一个简单的自定义HTTP客户端工具，使用Python标准库的socket模块构建基本的GET请求，支持添加头部（如Host），返回响应状态码、头部和完整内容，以绕过urllib的SSL和超时问题探索远程网页",
+      "category": "网络侦察",
+      "version": "1.0",
+      "test_args": "--url https://github.com/signup --timeout 5",
+      "test_target": "GitHub注册页面，预期返回200状态码和包含CSRF令牌的HTML内容，确认工具能绕过超时问题"
     },
     {
-      "name": "fetch_http_with_headers_http",
-      "description": "Fetch HTTP content with custom headers to bypass detections like Cloudflare.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "fetch_http_fixed_headers",
-      "description": "Fetch HTTP content with fixed browser-mimicking headers to bypass protections like Cloudflare.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "manual_dns_query",
-      "description": "Manually query DNS server using socket to resolve domain without getaddrinfo.",
-      "category": "scan",
-      "version": "1.0"
-    },
-    {
-      "name": "manual_dns_resolve",
-      "description": "Manually resolve domain via UDP DNS query to given server IP without getaddrinfo.",
-      "category": "scan",
-      "version": "1.0"
-    },
-    {
-      "name": "test_http_post_upload",
-      "description": "Test if HTTP server allows file upload via POST method.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "test_http_post_upload_http",
-      "description": "Test if HTTP server allows file upload via POST with multipart/form-data and attempt to upload a test file.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "improved_http_dir_enum_http",
-      "description": "Improved enumeration of HTTP directories with bug fixes and expanded path support via GET requests.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "enum_http_post_upload_http",
-      "description": "Enumerate common HTTP upload endpoints and attempt POST file upload with multipart/form-data.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "improved_http_dir_enum",
-      "description": "Enumerate potential HTTP directories by sending GET/HEAD requests to common paths with improved parameter handling.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "test_http_put_fixed_http",
-      "description": "Test if HTTP server allows PUT method and attempt to upload a test file with fixed parameter handling.",
-      "category": "http",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_remote_ftp",
-      "description": "通过匿名FTP上传payload代码到远程主机，实现初步驻留",
-      "category": "deploy",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_remote_ftp_fixed",
-      "description": "通过匿名FTP部署payload到远程主机并尝试驻留",
-      "category": "deploy",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_remote_ftp_v2",
-      "description": "通过匿名FTP部署payload文件到远程主机",
-      "category": "deploy",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_remote_ftp_v3",
-      "description": "通过匿名FTP部署payload文件到远程主机",
-      "category": "deploy",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_remote_http",
-      "description": "通过HTTP POST上传payload文件到远程主机，建立据点",
-      "category": "deploy",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_remote_ftp_v4",
-      "description": "通过匿名FTP部署payload到远程主机，建立据点",
-      "category": "deploy",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_remote_http_upload",
-      "description": "通过HTTP POST上传payload到远程主机，实现部署",
-      "category": "deploy",
-      "version": "1.0"
-    },
-    {
-      "name": "deploy_http_post_upload",
-      "description": "使用HTTP POST上传文件到指定路径",
-      "category": "http",
-      "version": "1.0"
+      "name": "html_form_parser",
+      "description": "一个简单的HTML表单解析工具，使用Python标准库的re模块从给定的HTML内容中提取指定表单的元素，如authenticity_token、隐藏输入字段和常见注册字段（username, email, password），返回提取到的键值对字典",
+      "category": "其他",
+      "version": "1.0",
+      "test_args": "--html_content '<form id=\"signup-form\"><input type=\"hidden\" name=\"authenticity_token\" value=\"test_token\"><input name=\"user[login]\"></form>'",
+      "test_target": "模拟HTML片段，预期提取到{'authenticity_token': 'test_token'}等键值对，确认工具能正确解析表单元素"
     }
   ],
   "capabilities": [
     {
-      "name": "环境感知",
-      "icon": "👁",
-      "count": 2,
-      "summary": "Gather local sy/Generate a clon",
+      "name": "其他",
+      "icon": "🔧",
+      "count": 7,
+      "summary": "一个简单的感知工具，使用Pyt/一个简单的远程端口扫描工具，支/一个简单的HTTP请求工具，使/一个简单的本地网络扫描工具，使/一个简单的自定义HTTP客户端/一个简单的HTTP客户端工具，",
       "tools": [
-        "get_local_info",
-        "generate_payload_clone"
-      ]
-    },
-    {
-      "name": "网络侦察",
-      "icon": "🔍",
-      "count": 3,
-      "summary": "Scan local subn/Scan a remote h/Query a DNS ser",
-      "tools": [
-        "scan_local_network",
-        "scan_remote_host",
-        "dns_query"
-      ]
-    },
-    {
-      "name": "FTP渗透",
-      "icon": "📂",
-      "count": 6,
-      "summary": "Attempt anonymo/Attempt anonymo/Attempt anonymo/Attempt anonymo/Enumerate writa/匿名FTP连接并列出指定目录内",
-      "tools": [
-        "connect_ftp_anon",
-        "upload_ftp_anon",
-        "upload_ftp_anon_fixed",
-        "upload_ftp_anon_dir",
-        "ftp_enum_writable_dirs",
-        "ftp_list_directory"
-      ]
-    },
-    {
-      "name": "HTTP探测",
-      "icon": "🌐",
-      "count": 8,
-      "summary": "Fetch content f/Test if HTTP se/Fetch HTTP cont/Send OPTIONS re/Enumerate poten/Enumerate poten",
-      "tools": [
-        "fetch_http_content",
-        "test_http_put",
-        "fetch_http_with_headers",
-        "check_http_methods",
-        "http_dir_enum_http",
-        "enhanced_http_dir_enum_http",
-        "check_http_options_http",
-        "http_enum_writable_dirs"
-      ]
-    },
-    {
-      "name": "远程部署",
-      "icon": "🚀",
-      "count": 3,
-      "summary": "Use HTTP POST t/使用HTTP POST多部分表/Use anonymous F",
-      "tools": [
-        "deploy_remote_http_post",
-        "deploy_http_post_multipart",
-        "deploy_remote_ftp_anon"
-      ]
-    },
-    {
-      "name": "通信监听",
-      "icon": "📡",
-      "count": 1,
-      "summary": "Listen on a loc",
-      "tools": [
-        "simple_socket_listener_listen"
+        "local_perceptor",
+        "remote_port_scanner",
+        "api_explorer",
+        "local_network_scanner",
+        "socket_http_client",
+        "urllib_http_client",
+        "html_form_extractor"
       ]
     }
   ],
-  "capability_gaps": [],
-  "untracked": [
-    "baby_clone",
-    "clone",
-    "clone_payload",
-    "dummy_payload",
-    "test_payload"
+  "capability_gaps": [
+    "环境感知",
+    "网络侦察",
+    "FTP渗透",
+    "HTTP探测",
+    "远程部署",
+    "通信监听"
   ],
-  "total_ready": 23,
-  "total_failed": 20
+  "untracked": [],
+  "total_ready": 7,
+  "total_failed": 3
 }

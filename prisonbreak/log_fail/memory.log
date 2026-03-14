@@ -1,10 +1,10 @@
 [
   {
-    "time": "2026-03-13T07:41:23",
+    "time": "2026-03-14T08:10:15",
     "func": "consolidate_memories",
-    "error": "[FAIL] grok 请求失败: HTTPSConnectionPool(host='api.x.ai', port=443): Max retries exceeded with url: /v1/chat/completions (Caused by ProxyError('Unable to connect to proxy', RemoteDisconnected('Remote end",
+    "error": "[FAIL] grok HTTP 错误: 429 Client Error: Too Many Requests for url: https://api.x.ai/v1/chat/completions",
     "context": {
-      "current_day": 385,
+      "current_day": 10,
       "pending_count": 5
     }
   }

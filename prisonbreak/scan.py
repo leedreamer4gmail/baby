@@ -182,10 +182,14 @@ def _build_cando(skill_files: dict[str, Path]) -> dict[str, Any]:
     for t in db_tools:
         meta_raw = t.get("meta_json", "")
         version = "1.0"
+        test_args = ""
+        test_target = ""
         if meta_raw:
             try:
                 meta = json.loads(meta_raw)
                 version = meta.get("version", "1.0")
+                test_args = meta.get("test_args") or ""
+                test_target = meta.get("test_target") or ""
             except (json.JSONDecodeError, TypeError):
                 pass
         entry = {
@@ -193,6 +197,8 @@ def _build_cando(skill_files: dict[str, Path]) -> dict[str, Any]:
             "description": t.get("description", ""),
             "category": t.get("category", ""),
             "version": version,
+            "test_args": test_args,
+            "test_target": test_target,
         }
         if t.get("status") == "battle_tested":
             available.append(entry)

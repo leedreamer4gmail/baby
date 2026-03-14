@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -203,6 +204,8 @@ def _tail_narrate(log_path: Path, pid: int, from_tail: bool = False) -> None:
 
 def main() -> None:
     """启动 exam10"""
+    # 确保子进程（core/brain）在 Linux 下也使用 UTF-8，Windows 下同样设置加强兼容
+    os.environ.setdefault("PYTHONUTF8", "1")
     # Windows 终端强制 UTF-8，避免 print 输出乱码
     if sys.platform == "win32":
         import io
@@ -247,7 +250,27 @@ def main() -> None:
         **kwargs,
     )
     LIFE_PID.write_text(str(proc.pid), encoding="utf-8")
-    print(f"baby 出生了 (PID {proc.pid})", flush=True)
+
+    # 判断是出生还是醒来：progress.json 存在且 day > 0 则是醒来
+    is_born = True
+    if PROGRESS_FILE.exists():
+        try:
+            p = json.loads(PROGRESS_FILE.read_text(encoding="utf-8"))
+            if int(p.get("day", 0)) > 0:
+                is_born = False
+        except (json.JSONDecodeError, OSError, ValueError):
+            pass
+
+    if is_born:
+        print(f"baby 出生了 (PID {proc.pid})", flush=True)
+    else:
+        day_info = ""
+        try:
+            p = json.loads(PROGRESS_FILE.read_text(encoding="utf-8"))
+            day_info = f"，记忆回到第{p.get('day', '?')}天"
+        except (json.JSONDecodeError, OSError):
+            pass
+        print(f"baby 醒来了{day_info} (PID {proc.pid})", flush=True)
 
     _tail_narrate(BRAIN_LOG, proc.pid)
 

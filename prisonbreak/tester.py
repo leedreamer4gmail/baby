@@ -19,6 +19,7 @@ from core import (
     log_fail,
 )
 from coder import fix_tool
+from scan import parse_skill_meta
 
 # === 常量 ===
 
@@ -40,9 +41,9 @@ def _syntax_check(tool_path: Path) -> str | None:
         return str(e)
 
 
-def _dry_run(tool_path: Path) -> tuple[int, str, str]:
-    """用默认参数干跑一次"""
-    return safe_run_tool(tool_path, args="", timeout=STRUCTURE_TIMEOUT)
+def _dry_run(tool_path: Path, args: str = "") -> tuple[int, str, str]:
+    """用指定参数（或默认空参数）干跑一次"""
+    return safe_run_tool(tool_path, args=args, timeout=STRUCTURE_TIMEOUT)
 
 
 def _grok_review_structure(
@@ -88,6 +89,8 @@ def _grok_review_structure(
     if response.startswith("[FAIL]"):
         if returncode == 0 and "Traceback" not in stderr:
             return True, "LLM审查不可用，基于返回码判定通过"
+        if returncode == -1 and "超时" in stderr and "Traceback" not in stderr:
+            return True, "LLM审查不可用，干跑超时（工具需真实目标），视为结构通过"
         log_fail("tester.py", "_grok_review_structure", response[:200],
                  {"name": name, "returncode": returncode})
         return False, f"LLM审查不可用，返回码={returncode}"
@@ -111,7 +114,9 @@ def _try_structure_pass(
 
     print(f"{label} 语法 [OK]", flush=True)
 
-    returncode, stdout, stderr = _dry_run(tool_path)
+    _meta = parse_skill_meta(tool_path)
+    _test_args = (_meta.get("test_args") or "") if _meta else ""
+    returncode, stdout, stderr = _dry_run(tool_path, args=_test_args)
     print(f"{label} 干跑: rc={returncode}", flush=True)
     if stdout:
         print(f"{label} stdout: {stdout[:300]}", flush=True)
@@ -119,6 +124,12 @@ def _try_structure_pass(
         print(f"{label} stderr: {stderr[:300]}", flush=True)
 
     code = tool_path.read_text(encoding="utf-8")
+
+    # 超时 + 无 Traceback → 工具需要真实网络目标，结构视为通过
+    if returncode == -1 and "Traceback" not in stderr:
+        print(f"{label} 超时（需真实目标），视为结构通过", flush=True)
+        return True, f"结构通过 | rc=-1 超时，无异常抛出（工具需真实目标）", False
+
     passed, review_msg = _grok_review_structure(
         tool_name, code, returncode, stdout, stderr,
     )

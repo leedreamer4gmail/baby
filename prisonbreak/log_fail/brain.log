@@ -1,10 +1,20 @@
 [
   {
-    "time": "2026-03-13T09:52:30",
-    "func": "_write_diary",
-    "error": "[FAIL] grok HTTP 错误: 502 Server Error: Bad Gateway for url: https://api.x.ai/v1/chat/completions",
+    "time": "2026-03-14T05:09:02",
+    "func": "_run_step",
+    "error": "TypeError: replace() argument 2 must be str, not dict",
     "context": {
-      "day": 428
+      "day": 2,
+      "step_num": 4
+    },
+    "traceback": "Traceback (most recent call last):\n  File \"D:\\baby\\prisonbreak\\brain.py\", line 1632, in _run_one_round\n    action_type, real_output = _run_step(step, cando, day)\n                               ~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"D:\\baby\\prisonbreak\\brain.py\", line 562, in _run_step\n    return _dispatch_action(day, spec, None, None, cando)\n  File \"D:\\baby\\prisonbreak\\brain.py\", line 1448, in _dispatch_action\n    return _do_tool_action(day, tool_spec)\n  File \"D:\\baby\\prisonbreak\\brain.py\", line 1402, in _do_tool_action\n    coder_prompt = _build_coder_prompt(tool_spec)\n  File \"D:\\baby\\prisonbreak\\brain.py\", line 962, in _build_coder_prompt\n    .replace(\"__TEST_ARGS__\", test_args).replace(\"__PARAMS__\", params))\n                                         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^\nTypeError: replace() argument 2 must be str, not dict\n"
+  },
+  {
+    "time": "2026-03-14T08:10:14",
+    "func": "_write_diary",
+    "error": "[FAIL] grok HTTP 错误: 429 Client Error: Too Many Requests for url: https://api.x.ai/v1/chat/completions",
+    "context": {
+      "day": 10
     }
   }
 ]
