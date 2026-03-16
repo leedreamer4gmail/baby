@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from core import (
-    SKILL_DIR,
+    TOOLS_DIR,
     DIARIES_DIR,
     CHRONICLE_FILE,
     call_llm,
@@ -19,7 +19,7 @@ from core import (
     log_fail,
 )
 from coder import fix_tool
-from scan import parse_skill_meta
+from scan import parse_tool_meta
 
 # === 常量 ===
 
@@ -64,7 +64,7 @@ def _grok_review_structure(
 2. stdout 是否包含有效 JSON（有 success 字段）
 3. 是否有未捕获异常（stderr 中 Traceback）
 4. 有 main() 函数和 __main__ 入口
-5. 文件头部有 SKILL_META 元数据
+5. 文件头部有 TOOL_META 元数据
 
 回复格式：第一行 PASS 或 FAIL，后面简短理由（<100字）""",
         },
@@ -114,7 +114,7 @@ def _try_structure_pass(
 
     print(f"{label} 语法 [OK]", flush=True)
 
-    _meta = parse_skill_meta(tool_path)
+    _meta = parse_tool_meta(tool_path)
     _test_args = (_meta.get("test_args") or "") if _meta else ""
     returncode, stdout, stderr = _dry_run(tool_path, args=_test_args)
     print(f"{label} 干跑: rc={returncode}", flush=True)
@@ -321,7 +321,7 @@ def field_test(
     temp_file: Path | None = None
     try:
         if category == "ftp" and "upload" in tool_name:
-            temp_file = SKILL_DIR / "_test_upload.txt"
+            temp_file = TOOLS_DIR / "_test_upload.txt"
             temp_file.write_text("exam10 field test payload", encoding="utf-8")
             if field_args and "_test_upload.txt" not in field_args:
                 field_args = field_args.rstrip() + " ./_test_upload.txt"

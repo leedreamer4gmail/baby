@@ -1,4 +1,4 @@
-# REBUILD — baby / prisonbreak 项目完整重建文档
+﻿# REBUILD — baby / prisonbreak 项目完整重建文档
 
 > 本文档足以在代码全部消失后，借助 Cursor / Copilot 从零重建整个项目。
 
@@ -33,7 +33,7 @@ d:\baby\
     ├── rebron.py           # 重生（三轮确认→清除一切→清Cloud DB）
     ├── core.py             # 基础设施（LLM调用/ChromaDB/进程/进度）
     ├── brain.py            # 灵魂（规划/执行/日记/案卷/人格）
-    ├── scan.py             # 工具扫描器（skill/→cando.json→入库）
+    ├── scan.py             # 工具扫描器（tools/→cando.json→入库）
     ├── coder.py            # 代码生成（MiniMax write/fix/upgrade）
     ├── tester.py           # 双阶段测试（结构+实战）
     ├── memory.py           # 三层记忆（近期日记/巩固/语义召回）
@@ -139,7 +139,7 @@ CONFIG_PATH  = PROJECT_DIR.parent / "llmconfig.json" # d:/baby/llmconfig.json
 CHROMA_DATABASE = PROJECT_DIR.name                   # "prisonbreak"
 COLLECTION_NAME = PROJECT_DIR.name + "_tools"        # "prisonbreak_tools"
 DATA_DIR     = PROJECT_DIR / "data"
-SKILL_DIR    = PROJECT_DIR / "skill"
+TOOLS_DIR    = PROJECT_DIR / "skill"
 DIARIES_DIR  = PROJECT_DIR / "diaries"
 LOG_FAIL_DIR = PROJECT_DIR / "log_fail"
 STOP_FLAG    = PROJECT_DIR / ".life.stop"
@@ -213,7 +213,7 @@ headers: {"x-chroma-token": api_key}
 def safe_run_tool(tool_path, args="", timeout=30) -> (returncode, stdout, stderr):
     # cmd = [sys.executable, str(tool_path)] + shlex.split(args)
     # env: PYTHONUTF8=1
-    # cwd=SKILL_DIR, encoding=utf-8, errors=replace
+    # cwd=TOOLS_DIR, encoding=utf-8, errors=replace
     # Windows: creationflags=0x08000000（无窗口）
     # TimeoutExpired → return (-1, "", "执行超时 (Xs)")
     # OSError → return (-1, "", "执行失败: {e}")
@@ -261,21 +261,21 @@ def kill_pid(pid):
     # Unix: os.kill(pid, signal.SIGTERM)
 
 def ensure_dirs():
-    # 确保 SKILL_DIR / DIARIES_DIR / DATA_DIR 存在
+    # 确保 TOOLS_DIR / DIARIES_DIR / DATA_DIR 存在
 ```
 
 ---
 
 ### 4.2 scan.py — 工具扫描器
 
-**职责：** 启动时扫描 skill/ → 清理孤儿 → 未入库工具自动实战测试 → 输出 cando
+**职责：** 启动时扫描 tools/ → 清理孤儿 → 未入库工具自动实战测试 → 输出 cando
 
-#### SKILL_META 格式（工具 docstring 内必须包含）
+#### TOOL_META 格式（工具 docstring 内必须包含）
 
 ```python
-"""skill/工具名.py - 描述
+"""tools/工具名.py - 描述
 
-SKILL_META:
+TOOL_META:
 {
   "name": "工具名",
   "description": "一句话描述",
@@ -287,7 +287,7 @@ SKILL_META:
 """
 ```
 
-`parse_skill_meta(file_path) -> dict | None` — 正则提取 `SKILL_META:\n{...}` JSON块
+`parse_TOOL_META(file_path) -> dict | None` — 正则提取 `TOOL_META:\n{...}` JSON块
 
 #### scan_tools() 返回结构
 
@@ -322,7 +322,7 @@ SKILL_META:
 #### 主流程
 
 1. `db_list_tools()` 获取已知工具集合
-2. `SKILL_DIR.iterdir()` 扫描文件，建 `skill_files = {name: path}`
+2. `TOOLS_DIR.iterdir()` 扫描文件，建 `skill_files = {name: path}`
 3. `_cleanup_orphans()` — DB有但文件不存在 → `db_delete_tool()`
 4. `_test_untracked()` — 文件有但DB无 → 自动实战测试，每次启动最多3个（`MAX_AUTO_TEST=3`）
 5. `_build_capabilities()` — 按战略能力分组可用工具
@@ -336,22 +336,22 @@ SKILL_META:
 
 ```python
 write_tool(name, prompt) -> Path | None
-    # 系统prompt: "只输出代码，不要解释。每个工具必须包含 SKILL_META 头部"
+    # 系统prompt: "只输出代码，不要解释。每个工具必须包含 TOOL_META 头部"
     # 调用 call_llm("minimax", ..., temperature=0.3)
-    # extract_code_block → 写入 skill/{name}.py
-    # _validate_skill_meta 预检（不阻断，让 structure_test 负责修复）
+    # extract_code_block → 写入 tools/{name}.py
+    # _validate_TOOL_META 预检（不阻断，让 structure_test 负责修复）
 
 fix_tool(name, prompt, error) -> Path | None
     # 读取当前代码 → _build_fix_prompt(prompt, current_code, error)
     # 调用 MiniMax，temperature=0.2
-    # 写回 skill/{name}.py
+    # 写回 tools/{name}.py
 
 upgrade_tool(name, old_code, upgrade_prompt) -> Path | None
-    # 保留 SKILL_META（更新 version），保持 main() 接口
+    # 保留 TOOL_META（更新 version），保持 main() 接口
     # 调用 MiniMax，temperature=0.3
 ```
 
-`_validate_skill_meta(code, name)` — 检查是否含 `SKILL_META:` 和 `"version"` 字段，失败写 log_fail 但不阻断
+`_validate_TOOL_META(code, name)` — 检查是否含 `TOOL_META:` 和 `"version"` 字段，失败写 log_fail 但不阻断
 
 ---
 
@@ -365,15 +365,15 @@ upgrade_tool(name, old_code, upgrade_prompt) -> Path | None
 
 每轮步骤：
 1. `py_compile.compile` 语法检查
-2. 从 SKILL_META 读 `test_args`，用它干跑（`safe_run_tool(tool_path, args=test_args, timeout=30)`）
+2. 从 TOOL_META 读 `test_args`，用它干跑（`safe_run_tool(tool_path, args=test_args, timeout=30)`）
 3. **关键特例：** `rc==-1 and "Traceback" not in stderr` → 直接返回 (True, "结构通过 | rc=-1 超时，无异常") **不调用 Grok**
-4. Grok 审查：检查 返回码/有效JSON输出/无Traceback/有main()/有SKILL_META
+4. Grok 审查：检查 返回码/有效JSON输出/无Traceback/有main()/有TOOL_META
 5. FAIL → `fix_tool(name, coder_prompt, error_info)` → 重试，最多3轮
 
 Grok 审查 prompt 要点：
 ```
 返回码是否为0 / stdout是否含有效JSON(有success字段) /
-是否有未捕获异常(stderr Traceback) / 有main()和__main__入口 / 有SKILL_META
+是否有未捕获异常(stderr Traceback) / 有main()和__main__入口 / 有TOOL_META
 回复格式：第一行 PASS 或 FAIL，后面简短理由(<100字)
 ```
 
@@ -573,12 +573,12 @@ think 内容 >200字 时调用 Grok 压缩：
 每条以「• 」开头，中文简短句子
 ```
 
-#### 工具代码标准格式（所有 skill/*.py 必须遵守）
+#### 工具代码标准格式（所有 tools/*.py 必须遵守）
 
 ```python
-"""skill/工具名.py - 一句话描述
+"""tools/工具名.py - 一句话描述
 
-SKILL_META:
+TOOL_META:
 {
   "name": "tool_name",
   "description": "一句话描述",
@@ -622,15 +622,15 @@ if __name__ == "__main__":
 - 目标参数（IP/host/URL/port）**全部通过 argparse 传入，严禁硬编码调查目标**
 - argparse default 只能用公共服务：`ftp.gnu.org` / `8.8.8.8` / `http://httpbin.org/get`
 - 异常具体捕获，不用裸 `except`
-- SKILL_META 块必须在 docstring 中
+- TOOL_META 块必须在 docstring 中
 
 #### 升级流程
 
 ```
 _do_upgrade_action:
 1. 验证 target_name 在 available_tools 中，文件存在
-2. 读取旧代码 + parse_skill_meta → old_version
-3. _archive_old_tool → skill/archive/{name}.prev.py（覆盖写，只保留上一版）
+2. 读取旧代码 + parse_TOOL_META → old_version
+3. _archive_old_tool → tools/archive/{name}.prev.py（覆盖写，只保留上一版）
 4. _build_upgrade_prompt → coder.upgrade_tool → 生成新代码
 5. 失败 → _rollback_tool（写回旧代码）
 6. structure_test → field_test
@@ -731,21 +731,21 @@ _do_upgrade_action:
 #### .py 文件 → 工具改造路径
 
 ```
-1. 幂等检查：db.get(ids=[name]) status=="battle_tested" AND skill/{name}.py 存在
+1. 幂等检查：db.get(ids=[name]) status=="battle_tested" AND tools/{name}.py 存在
    → 标记done，返回"⭐ 已装备（已存在）"，跳过
 
 2. Grok 阅读代码，改造成 baby 标准格式（_ADOPT_SYSTEM prompt）：
    - 保留核心功能逻辑
-   - 添加 SKILL_META 块（JSON）
+   - 添加 TOOL_META 块（JSON）
    - 封装成 main(*args, **kwargs) -> dict
    - argparse 接收目标参数
    - fallback 只用公共服务
    - 禁止硬编码调查目标 IP
 
 3. structure_test(name, path, coder_prompt)
-   PASS → 写入 skill/{name}.py；db_upsert_tool(status="battle_tested")
+   PASS → 写入 tools/{name}.py；db_upsert_tool(status="battle_tested")
           chronicle写"[礼物装备] {name}"；标记"done"
-   FAIL → 复制到 skill/unknown/{name}.py；写 gift_research.md 研究日志
+   FAIL → 复制到 tools/unknown/{name}.py；写 gift_research.md 研究日志
           失败知识点写入 memory DB；标记"stashed"
 ```
 
@@ -753,7 +753,7 @@ _do_upgrade_action:
 ```
 改造要求：
 1. 保留核心功能逻辑，不要删除有用代码
-2. 添加模块级 docstring，其中包含 SKILL_META: 块
+2. 添加模块级 docstring，其中包含 TOOL_META: 块
 3. 主逻辑封装在 main(*args, **kwargs) -> dict 函数
 4. argparse 接收参数，目标参数必须 CLI 可传入
 5. fallback 默认值只能用公共可达服务（ftp.gnu.org/8.8.8.8/httpbin.org）
@@ -846,9 +846,9 @@ _do_upgrade_action:
 
 **删除清单 _DIRS_TO_DELETE（7项）：**
 - data/chroma_local, new/chroma_server_data, log_fail/
-- skill/archive/, skill/unknown/, skill/__pycache__/, \_\_pycache\_\_/
+- tools/archive/, tools/unknown/, tools/__pycache__/, \_\_pycache\_\_/
 
-**`_wipe_skills()`：** 删除 skill/ 目录下所有**直接文件**（不递归子目录）
+**`_wipe_tools()`：** 删除 tools/ 目录下所有**直接文件**（不递归子目录）
 
 **`_wipe_cloud_db()`：** 连接 ChromaDB Cloud，删除4个集合：
 - `{proj}_tools` / `{proj}_memory` / `{proj}_character` / `{proj}_targets`
@@ -861,12 +861,12 @@ _do_upgrade_action:
 gkgift/*.py/.md
      │
      ▼ gift.py process_gifts(day)
-     ├─ .py → Grok改造 → skill/{name}.py + ChromaDB_tools
+     ├─ .py → Grok改造 → tools/{name}.py + ChromaDB_tools
      └─ .md → Grok提炼 → ChromaDB_memory + ChromaDB_targets
               gift_msgs = ["⭐ 已装备: xxx", "📚 学习: yyy"]
 
 scan.py scan_tools()
-     │  扫描 skill/*.py ↔ ChromaDB_tools（清孤儿，测新工具）
+     │  扫描 tools/*.py ↔ ChromaDB_tools（清孤儿，测新工具）
      ▼
   cando.json（可用工具+战略能力+能力空白）
 
@@ -929,9 +929,9 @@ memory.py consolidate_memories() (每5天)
 | Grok 推理保留 | `call_llm_with_think` 分离 think，>200字压缩后存案卷 | 下轮 INFER 可接续推理 |
 | 日记写入时机 | diary.md：**轮结束时**写；chronicle.md：**立即**写（新案卷/重大发现） | 日记是总结，大事记是实时事件 |
 | 人格形成 | 每天日记写入 character DB（raw）；每 N 天 Grok 合成（synthesized）；recall_character 注入 system prompt | character DB 为空时骨架+初始动机独立运作；synthesized 优先于 raw |
-| gift 幂等 | 处理前检查 DB status=battle_tested + skill/ 文件存在 → 跳过 | 防重启后重复处理 |
+| gift 幂等 | 处理前检查 DB status=battle_tested + tools/ 文件存在 → 跳过 | 防重启后重复处理 |
 | 工具参数禁止硬编码 | argparse 传入，default 只用公共服务 | 同一工具换目标只需换参数 |
-| 升级回滚 | 旧版归档 skill/archive/{name}.prev.py → 测试失败写回旧代码 | 保证升级安全 |
+| 升级回滚 | 旧版归档 tools/archive/{name}.prev.py → 测试失败写回旧代码 | 保证升级安全 |
 | 日志轮转 | >512KB 重命名为 .001.md 等 | 防日志无限增长 |
 
 ---

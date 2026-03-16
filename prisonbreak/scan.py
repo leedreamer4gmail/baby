@@ -1,6 +1,6 @@
-"""exam10 scan - 工具扫描器（解析 SKILL_META → 实战测试 → 注册 DB）
+"""exam10 scan - 工具扫描器（解析 TOOL_META → 实战测试 → 注册 DB）
 版本: 2.1
-职责: 启动时扫描 skill/ 目录，自动发现未入库工具，实战测试后注册
+职责: 启动时扫描 tools/ 目录，自动发现未入库工具，实战测试后注册
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from core import (
-    SKILL_DIR,
+    TOOLS_DIR,
     DATA_DIR,
     db_list_tools,
     db_delete_tool,
@@ -35,12 +35,12 @@ CAPABILITY_MAP: dict[str, dict[str, Any]] = {
 }
 
 
-# === SKILL_META 解析 ===
+# === TOOL_META 解析 ===
 
-def parse_skill_meta(file_path: Path) -> dict[str, Any] | None:
-    """从 skill 文件的 docstring 中提取 SKILL_META JSON
+def parse_tool_meta(file_path: Path) -> dict[str, Any] | None:
+    """从 tool 文件的 docstring 中提取 TOOL_META JSON
 
-    格式要求：docstring 中包含 "SKILL_META:" 后跟 JSON 块
+    格式要求：docstring 中包含 "TOOL_META:" 后跟 JSON 块
 
     Returns:
         解析成功返回 dict，失败返回 None
@@ -50,9 +50,9 @@ def parse_skill_meta(file_path: Path) -> dict[str, Any] | None:
     except (OSError, UnicodeDecodeError):
         return None
 
-    # 匹配 SKILL_META: 后面的 JSON
+    # 匹配 TOOL_META: 后面的 JSON
     match = re.search(
-        r"SKILL_META:\s*\n\s*(\{.*?\})",
+        r"TOOL_META:\s*\n\s*(\{.*?\})",
         content,
         re.DOTALL,
     )
@@ -65,7 +65,7 @@ def parse_skill_meta(file_path: Path) -> dict[str, Any] | None:
             meta["name"] = file_path.stem
         return meta
     except json.JSONDecodeError:
-        print(f"[scan] SKILL_META JSON 解析失败: {file_path.name}", flush=True)
+        print(f"[scan] TOOL_META JSON 解析失败: {file_path.name}", flush=True)
         return None
 
 
@@ -99,9 +99,9 @@ def _test_untracked(
             print(f"[scan] 达到自动测试上限({MAX_AUTO_TEST})，剩余待下次", flush=True)
             break
         file_path = skill_files[name]
-        meta = parse_skill_meta(file_path)
+        meta = parse_tool_meta(file_path)
         if meta is None:
-            print(f"[scan] {name}: 无 SKILL_META，跳过", flush=True)
+            print(f"[scan] {name}: 无 TOOL_META，跳过", flush=True)
             continue
         print(f"[scan] 自动实战测试: {name}", flush=True)
         db_upsert_tool(
@@ -225,12 +225,12 @@ def _build_cando(skill_files: dict[str, Path]) -> dict[str, Any]:
 
 
 def scan_tools() -> dict[str, Any]:
-    """扫描 skill/ vs DB，核对+测试+统计"""
+    """扫描 tools/ vs DB，核对+测试+统计"""
     ensure_dirs()
     db_names = {t["name"] for t in db_list_tools()}
     skill_files: dict[str, Path] = {
         f.stem: f
-        for f in SKILL_DIR.iterdir()
+        for f in TOOLS_DIR.iterdir()
         if f.is_file() and f.suffix == ".py" and not f.name.startswith("_")
     }
 

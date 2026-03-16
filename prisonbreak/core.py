@@ -39,7 +39,7 @@ CORE_LOCK: Path = PROJECT_DIR / ".core.lock"
 LIFE_PID: Path = PROJECT_DIR / "life.pid"
 BRAIN_PID: Path = PROJECT_DIR / "brain.pid"
 
-SKILL_DIR: Path = PROJECT_DIR / "skill"
+TOOLS_DIR: Path = PROJECT_DIR / "tools"
 DIARIES_DIR: Path = PROJECT_DIR / "diaries"
 DATA_DIR: Path = PROJECT_DIR / "data"
 LOG_FAIL_DIR: Path = PROJECT_DIR / "log_fail"
@@ -533,7 +533,7 @@ def safe_run_tool(
         "capture_output": True,
         "text": True,
         "timeout": timeout,
-        "cwd": str(SKILL_DIR),
+        "cwd": str(TOOLS_DIR),
         "encoding": "utf-8",
         "errors": "replace",
         "env": child_env,
@@ -602,7 +602,7 @@ def save_progress(day: int = -1, round_num: int = -1, **extra: Any) -> None:
 
 def ensure_dirs() -> None:
     """确保所有需要的目录存在"""
-    for d in (SKILL_DIR, DIARIES_DIR, DATA_DIR):
+    for d in (TOOLS_DIR, DIARIES_DIR, DATA_DIR):
         d.mkdir(parents=True, exist_ok=True)
 
 

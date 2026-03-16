@@ -18,7 +18,7 @@ from typing import Any
 
 from core import (
     PROJECT_DIR,
-    SKILL_DIR,
+    TOOLS_DIR,
     DIARIES_DIR,
     DATA_DIR,
     REPORT_PATH,
@@ -37,7 +37,7 @@ from core import (
     log_fail,
     STOP_FLAG,
 )
-from scan import scan_tools, parse_skill_meta
+from scan import scan_tools, parse_tool_meta
 from coder import write_tool, upgrade_tool
 from tester import structure_test, field_test
 from memory import (
@@ -812,10 +812,10 @@ def _parse_think_response(text: str) -> tuple[str, dict[str, Any] | None, dict[s
 # Coder Prompt 构建（遵循 lawpromt.md）
 # ============================================================
 
-_SKILL_CODE_TEMPLATE: str = (
-    '"""skill/__NAME__.py - __DESC__\n'
+_TOOL_CODE_TEMPLATE: str = (
+    '"""tools/__NAME__.py - __DESC__\n'
     "\n"
-    "SKILL_META:\n"
+    "TOOL_META:\n"
     "{\n"
     '  "name": "__NAME__",\n'
     '  "description": "__DESC__",\n'
@@ -877,12 +877,12 @@ _TECH_REQUIREMENTS: str = """# 技术要求
 # 复用性要求（强制）
 - 所有 host/IP/port/path/URL 等目标参数必须通过 CLI 参数传入，严禁硬编码
 - __main__ 的 argparse default 只能用公共可达服务：FTP类用 ftp.gnu.org，扫描类用 8.8.8.8，HTTP类用 http://httpbin.org/get
-- SKILL_META 的 test_args 只填公共目标，格式为 argparse 风格：如 "--host ftp.gnu.org --port 21"
+- TOOL_META 的 test_args 只填公共目标，格式为 argparse 风格：如 "--host ftp.gnu.org --port 21"
 - 同一工具换一个目标只需换参数，不需要重写工具"""
 
 
 def _build_coder_prompt(spec: dict[str, Any]) -> str:
-    """为 MiniMax 构建精炼的 coder prompt，包含 SKILL_META 头模板"""
+    """为 MiniMax 构建精炼的 coder prompt，包含 TOOL_META 头模板"""
     name = spec.get("name", "unnamed_tool")
     desc = spec.get("description", "")
     purpose = spec.get("purpose", "")
@@ -904,7 +904,7 @@ def _build_coder_prompt(spec: dict[str, Any]) -> str:
     )
     uses_hint = _format_uses_hint(spec.get("uses_tools", []))
 
-    code_example = (_SKILL_CODE_TEMPLATE
+    code_example = (_TOOL_CODE_TEMPLATE
         .replace("__NAME__", name).replace("__DESC__", desc)
         .replace("__CATEGORY__", category).replace("__TEST_TARGET__", test_target)
         .replace("__TEST_ARGS__", test_args).replace("__PARAMS__", params))
@@ -922,15 +922,15 @@ def _build_coder_prompt(spec: dict[str, Any]) -> str:
         f"# 工具名称\n{name}\n\n"
         f"# 功能描述\n{desc}\n\n"
         f"# 设计理由\n{purpose}\n\n"
-        f"- 文件名: skill/{name}.py\n{tech_reqs}\n\n"
+        f"- 文件名: tools/{name}.py\n{tech_reqs}\n\n"
         f"# 预判难点\n{difficulty}\n\n"
         f"# 复用性示例（必须遵守）\n"
         f"同一工具应对任意目标，只需换参数：\n"
-        f"  python skill/{name}.py --host ftp.gnu.org   # 测试\n"
-        f"  python skill/{name}.py --host 1.2.3.4       # 实战\n"
+        f"  python tools/{name}.py --host ftp.gnu.org   # 测试\n"
+        f"  python tools/{name}.py --host 1.2.3.4       # 实战\n"
         f"不允许为不同目标重写功能相同的工具。\n\n"
         f"# 可用的已有工具\n{uses_hint}\n\n"
-        f"# 代码结构模板（必须包含 SKILL_META 头部）\n```python\n{code_example}\n```\n\n"
+        f"# 代码结构模板（必须包含 TOOL_META 头部）\n```python\n{code_example}\n```\n\n"
         f"只输出完整 Python 代码，用 ```python ``` 包裹。\n"
     )
 
@@ -1115,7 +1115,7 @@ def _execute_explore(
     if tool_name not in available_names:
         return False, f"工具 {tool_name} 不在可用列表中（未通过实战或不存在）"
 
-    tool_path = SKILL_DIR / f"{tool_name}.py"
+    tool_path = TOOLS_DIR / f"{tool_name}.py"
     if not tool_path.exists():
         return False, f"工具文件不存在: {tool_path}"
 
@@ -1157,7 +1157,7 @@ def _build_upgrade_prompt(
         f"# 当前代码（v{old_version}）\n```python\n{old_code}\n```\n\n"
         f"# 改进需求\n{improvements}\n\n"
         f"# 升级要求\n"
-        f"- 保留 SKILL_META 头部，version 改为 \"{new_version}\"\n"
+        f"- 保留 TOOL_META 头部，version 改为 \"{new_version}\"\n"
         f"- 保留 main() 函数签名和 if __name__ == \"__main__\" 入口\n"
         f"- 在原有功能基础上改进，不要从零重写\n"
         f"- 只用 Python 标准库，代码 < 150 行\n"
@@ -1168,8 +1168,8 @@ def _build_upgrade_prompt(
 def _archive_old_tool(
     tool_path: Path, old_code: str, old_version: str,
 ) -> bool:
-    """归档旧版到 skill/archive/{name}.prev.py，只保留上一个版本（覆盖写入）"""
-    archive_dir = SKILL_DIR / "archive"
+    """归档旧版到 tools/archive/{name}.prev.py，只保留上一个版本（覆盖写入）"""
+    archive_dir = TOOLS_DIR / "archive"
     try:
         archive_dir.mkdir(exist_ok=True)
         archive_path = archive_dir / f"{tool_path.stem}.prev.py"
@@ -1220,7 +1220,7 @@ def _test_and_register_upgrade(
 
     # 升级成功：更新 DB
     new_version = _upgrade_version(old_version)
-    new_meta = parse_skill_meta(new_path) or dict(old_meta)
+    new_meta = parse_tool_meta(new_path) or dict(old_meta)
     new_meta["version"] = new_version
     db_upsert_tool(
         name=target_name,
@@ -1246,7 +1246,7 @@ def _validate_upgrade_target(
     available_names = {t["name"] for t in cando.get("available_tools", [])}
     if target_name not in available_names:
         return None, f"升级目标 {target_name} 不在可用工具列表中"
-    tool_path = SKILL_DIR / f"{target_name}.py"
+    tool_path = TOOLS_DIR / f"{target_name}.py"
     if not tool_path.exists():
         return None, f"升级目标文件不存在: {tool_path}"
     return tool_path, ""
@@ -1311,7 +1311,7 @@ def _do_upgrade_action(
 
     # 读取旧代码和元数据
     old_code = tool_path.read_text(encoding="utf-8")
-    old_meta = parse_skill_meta(tool_path) or {}
+    old_meta = parse_tool_meta(tool_path) or {}
     old_version = old_meta.get("version", "1.0")
 
     print(f"[brain] 升级工具: {target_name} v{old_version} - {improvements}", flush=True)

@@ -1,0 +1,7 @@
+{
+  "ports": [554, 8554, 37777, 37778, 8000, 8080, 8081, 5540, 5541, 8899, 9000, 10000],
+  "paths": ["/11", "/ch1", "/ch0", "/stream", "/live", "/", "/stream1", "/livestream", "/cam", "/realmonitor"],
+  "transports": ["tcp", "udp"],
+  "auths": ["", "admin:@"],
+  "probe_workers": 4
+}

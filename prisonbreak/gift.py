@@ -1,8 +1,8 @@
 """gift.py - gkgift 礼物箱自动学习系统
 职责:
   1. 扫描 gkgift/ 目录的新文件（每轮 round 开头调用）
-  2. .py 文件 → 理解功能 → 完善 SKILL_META → structure_test → 装备入库
-     失败则放 skill/unknown/，写研究日志，存入记忆 DB
+  2. .py 文件 → 理解功能 → 完善 TOOL_META → structure_test → 装备入库
+     失败则放 tools/unknown/，写研究日志，存入记忆 DB
   3. 其他文件（.md/.txt/.rst 等）→ Grok 提炼知识点 → 写入记忆 DB
      如含 IP/端口发现 → 写入目标 DB
 """
@@ -17,7 +17,7 @@ from typing import Any
 
 from core import (
     PROJECT_DIR,
-    SKILL_DIR,
+    TOOLS_DIR,
     DATA_DIR,
     call_llm,
     call_llm_with_think,
@@ -31,7 +31,7 @@ from memory import (
     upsert_knowledge,
     write_target,
 )
-from scan import parse_skill_meta
+from scan import parse_tool_meta
 from tester import structure_test
 
 # ============================================================
@@ -39,7 +39,7 @@ from tester import structure_test
 # ============================================================
 
 GIFT_DIR: Path = PROJECT_DIR.parent / "gkgift"
-UNKNOWN_DIR: Path = SKILL_DIR / "unknown"
+UNKNOWN_DIR: Path = TOOLS_DIR / "unknown"
 GIFT_DONE_FILE: Path = DATA_DIR / "gift_done.json"
 GIFT_RESEARCH_FILE: Path = DATA_DIR / "gift_research.md"
 
@@ -84,7 +84,7 @@ def _mark_done(filename: str, status: str, day: int, note: str = "") -> None:
 # 工具改造 Prompt 模板（gift.py 内部自有，避免循环 import brain）
 # ============================================================
 
-_ADOPT_SKILL_META_FORMAT: str = """{
+_ADOPT_TOOL_META_FORMAT: str = """{
   "name": "工具名_snake_case",
   "description": "一句话描述工具功能",
   "category": "local/scan/ftp/deploy/listen/http",
@@ -98,7 +98,7 @@ _ADOPT_SYSTEM: str = """你是一个 Python 工具改造工程师。
 
 改造要求：
 1. 保留核心功能逻辑，不要删除有用代码
-2. 添加模块级 docstring，其中包含 SKILL_META: 块（JSON格式见用户提供的模板）
+2. 添加模块级 docstring，其中包含 TOOL_META: 块（JSON格式见用户提供的模板）
 3. 主逻辑封装在 main(*args, **kwargs) -> dict[str, Any] 函数中，返回 {"success": bool, "message": str, "data": {...}}
 4. 增加 if __name__ == "__main__": 入口，使用 argparse 接收参数（目标 host/url/ip 等必须 CLI 可传入）
 5. 所有目标参数必须通过 argparse 传入，禁止在代码里硬编码真实调查目标 IP
@@ -190,12 +190,12 @@ def _build_adopt_coder_prompt(name: str, description: str) -> str:
         f"# 功能描述\n{description}\n\n"
         f"# 设计理由\n改造自 gkgift 外来工具，保留核心功能，符合 baby 标准格式\n\n"
         f"# 技术要求\n"
-        f"- 文件头部 docstring 必须包含 SKILL_META: 块（JSON）\n"
+        f"- 文件头部 docstring 必须包含 TOOL_META: 块（JSON）\n"
         f"- 有 main() -> dict[str, Any] 函数，返回 {{\"success\": bool, \"message\": str, \"data\": {{}}}}\n"
         f"- if __name__ == '__main__': 入口 + argparse 接收目标参数\n"
         f"- 只用 Python 标准库，禁止第三方库\n"
         f"- 目标参数必须 CLI 可传入，fallback 用公共服务（ftp.gnu.org/8.8.8.8/httpbin.org）\n\n"
-        f"# SKILL_META 格式\n```json\n{_ADOPT_SKILL_META_FORMAT}\n```\n\n"
+        f"# TOOL_META 格式\n```json\n{_ADOPT_TOOL_META_FORMAT}\n```\n\n"
         f"只输出完整 Python 代码，用 ```python ``` 包裹。\n"
     )
 
@@ -214,14 +214,14 @@ def _stash_tool(file_path: Path, name: str, day: int, reason: str) -> None:
         f"- 原文件: gkgift/{file_path.name}\n"
         f"- 暂存位置: skill/unknown/{file_path.name}\n"
         f"- 改造失败原因: {reason[:300]}\n"
-        f"- 待研究: 手动阅读后可 upgrade 或写 SKILL_META 直接装备\n"
+        f"- 待研究: 手动阅读后可 upgrade 或写 TOOL_META 直接装备\n"
     )
     with open(GIFT_RESEARCH_FILE, "a", encoding="utf-8") as f:
         f.write(entry)
 
     # 写一条记忆 DB
     upsert_knowledge(
-        f"[asset] 神秘工具 {name} 在 skill/unknown/ 等待研究，改造失败原因: {reason[:100]} | mystery tool unknown gift",
+        f"[asset] 神秘工具 {name} 在 tools/unknown/ 等待研究，改造失败原因: {reason[:100]} | mystery tool unknown gift",
         day, day,
     )
 
@@ -230,8 +230,8 @@ def _adopt_tool(file_path: Path, day: int) -> str:
     """读取外来 .py 工具，Grok 理解并改造，structure_test 验证，成功装备或暂存"""
     name = file_path.stem
 
-    # 幂等性检查：工具已在 skill/ 且 DB 状态为 battle_tested → 直接标记跳过
-    _tool_path_check = SKILL_DIR / f"{name}.py"
+    # 幂等性检查：工具已在 tools/ 且 DB 状态为 battle_tested → 直接标记跳过
+    _tool_path_check = TOOLS_DIR / f"{name}.py"
     if _tool_path_check.exists():
         try:
             _col = get_chroma_collection()
@@ -257,7 +257,7 @@ def _adopt_tool(file_path: Path, day: int) -> str:
     msgs: list[dict[str, str]] = [
         {"role": "system", "content": _ADOPT_SYSTEM},
         {"role": "user", "content": (
-            f"SKILL_META 格式模板：\n```json\n{_ADOPT_SKILL_META_FORMAT}\n```\n\n"
+            f"TOOL_META 格式模板：\n```json\n{_ADOPT_TOOL_META_FORMAT}\n```\n\n"
             f"外来工具代码（文件名: {file_path.name}）：\n```python\n{raw_code}\n```"
         )},
     ]
@@ -268,18 +268,18 @@ def _adopt_tool(file_path: Path, day: int) -> str:
         _mark_done(file_path.name, "stashed", day, "Grok失败")
         return f"📦 神秘武器: {name}（Grok失败，暂入未知区）"
 
-    # 提取并写入 skill/
+    # 提取并写入 tools/
     adapted_code = extract_code_block(grok_response)
     if not adapted_code or len(adapted_code) < 30:
         _stash_tool(file_path, name, day, "Grok 未返回有效代码")
         _mark_done(file_path.name, "stashed", day, "无有效代码")
         return f"📦 神秘武器: {name}（代码提取失败，暂入未知区）"
 
-    tool_path = SKILL_DIR / f"{name}.py"
+    tool_path = TOOLS_DIR / f"{name}.py"
     tool_path.write_text(adapted_code, encoding="utf-8")
 
     # 先从改造后的代码提取描述（用于 coder_prompt）
-    meta = parse_skill_meta(tool_path)
+    meta = parse_tool_meta(tool_path)
     description = (meta.get("description") or f"改造自gkgift的工具 {name}") if meta else f"改造自gkgift的工具 {name}"
     category = (meta.get("category") or "local") if meta else "local"
 
@@ -289,7 +289,7 @@ def _adopt_tool(file_path: Path, day: int) -> str:
 
     if passed:
         # 重新读 meta（修复后可能已更新）
-        meta = parse_skill_meta(tool_path) or {}
+        meta = parse_tool_meta(tool_path) or {}
         description = meta.get("description") or description
         category = meta.get("category") or category
         db_upsert_tool(

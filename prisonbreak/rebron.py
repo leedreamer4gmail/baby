@@ -11,7 +11,7 @@ from pathlib import Path
 from core import (
     PROJECT_DIR,
     DATA_DIR,
-    SKILL_DIR,
+    TOOLS_DIR,
     DIARIES_DIR,
     LOG_FAIL_DIR,
     REPORT_PATH,
@@ -49,9 +49,9 @@ _DIRS_TO_DELETE: list[Path] = [
     DATA_DIR / "chroma_local",
     PROJECT_DIR / "new" / "chroma_server_data",
     LOG_FAIL_DIR,
-    SKILL_DIR / "archive",
-    SKILL_DIR / "unknown",
-    SKILL_DIR / "__pycache__",
+    TOOLS_DIR / "archive",
+    TOOLS_DIR / "unknown",
+    TOOLS_DIR / "__pycache__",
     PROJECT_DIR / "__pycache__",
 ]
 
@@ -88,11 +88,11 @@ def _confirm_three_times() -> bool:
     return True
 
 
-def _wipe_skills() -> int:
-    """删除 skill/ 目录下所有文件（含非 .py）"""
+def _wipe_tools() -> int:
+    """删除 tools/ 目录下所有文件（含非 .py）"""
     count = 0
-    if SKILL_DIR.exists():
-        for f in SKILL_DIR.iterdir():
+    if TOOLS_DIR.exists():
+        for f in TOOLS_DIR.iterdir():
             if f.is_file():
                 try:
                     f.unlink()
@@ -182,8 +182,8 @@ def main() -> None:
             except OSError as e:
                 print(f"  [跳过] {d.name}: {e}", flush=True)
 
-    # 删除 skill/ 下所有文件
-    deleted_skills = _wipe_skills()
+    # 删除 tools/ 下所有文件
+    deleted_skills = _wipe_tools()
     if deleted_skills > 0:
         print(f"  ✓ 删除工具: {deleted_skills} 个文件", flush=True)
 
